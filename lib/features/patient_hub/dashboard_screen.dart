@@ -33,11 +33,10 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-            _ConstruirCardCaloriasPremium(),
+            const _ConstruirCardCaloriasPremium(),
             const SizedBox(height: 24),
-            _ConstruirCardAgua Gamificado(),
+            const _ConstruirCardAguaGamificado(), // CORREÇÃO DO ESPAÇO AQUI
             const SizedBox(height: 24),
-            // Espaço para as próximas implementações (Gráficos, etc)
           ],
         ),
       ),
@@ -46,6 +45,8 @@ class DashboardScreen extends StatelessWidget {
 }
 
 class _ConstruirCardCaloriasPremium extends StatelessWidget {
+  const _ConstruirCardCaloriasPremium({Key? key}) : super(key: key);
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -67,7 +68,6 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               _ConstruirInfoCaloria('Consumido', '1.250', Icons.local_dining),
-              // Anel de Progresso Central
               Stack(
                 alignment: Alignment.center,
                 children: [
@@ -75,7 +75,7 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
                     width: 100,
                     height: 100,
                     child: CircularProgressIndicator(
-                      value: 1250 / 2000, // Simulando progresso
+                      value: 1250 / 2000,
                       strokeWidth: 10,
                       backgroundColor: Colors.grey.shade200,
                       color: AppColors.primarySage,
@@ -111,7 +111,6 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
           const SizedBox(height: 24),
           const Divider(height: 1),
           const SizedBox(height: 20),
-          // Barras de Macronutrientes
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -183,7 +182,9 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
   }
 }
 
-class _ConstruirCardAgua Gamificado extends StatelessWidget {
+class _ConstruirCardAguaGamificado extends StatelessWidget {
+  const _ConstruirCardAguaGamificado({Key? key}) : super(key: key); // CORREÇÃO DO ESPAÇO AQUI
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -228,7 +229,7 @@ class _ConstruirCardAgua Gamificado extends StatelessWidget {
             ],
           ),
           ElevatedButton(
-            onPressed: () {}, // Futura lógica de adicionar água
+            onPressed: () {},
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.white,
               foregroundColor: Colors.blue.shade600,
