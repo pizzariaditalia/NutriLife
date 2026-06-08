@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import 'dashboard_screen.dart';
-import 'interactive_menu_screen.dart';
-import 'grocery_list_screen.dart';
+import 'meal_diary_screen.dart';
+import '../food_database/food_search_screen.dart';
 import '../social_lifestyle/non_scale_victories_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
@@ -13,65 +13,69 @@ class MainNavigationScreen extends StatefulWidget {
 }
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
-  int _indiceAtual = 0;
+  int _abaAtualIndex = 0;
 
-  // Lista com as telas que serão exibidas
+  // Lista com as telas que serão exibidas em cada aba do aplicativo
   final List<Widget> _telas = [
-    const DashboardScreen(),
-    const InteractiveMenuScreen(),
-    const GroceryListScreen(),
-    const NonScaleVictoriesScreen(),
+    const DashboardScreen(),     // Aba 0: Painel de Controle com Macros e Água
+    const MealDiaryScreen(),     // Aba 1: Diário de Refeições por Turnos
+    const FoodSearchScreen(),    // Aba 2: Base de Alimentos TACO/IBGE
+    const NonScaleVictoriesScreen(), // Aba 3: Conquistas além da balança
   ];
-
-  void _aoTocarNaAba(int index) {
-    setState(() {
-      _indiceAtual = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundCreme,
-      // O corpo da tela muda dinamicamente conforme o índice selecionado
       body: IndexedStack(
-        index: _indiceAtual,
+        index: _abaAtualIndex,
         children: _telas,
       ),
+      // 底部导航栏 - BOTTOM NAVIGATION BAR PREMIUM
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 20,
+              offset: const Offset(0, -4),
             ),
           ],
         ),
         child: BottomNavigationBar(
-          currentIndex: _indiceAtual,
-          onTap: _aoTocarNaAba,
+          currentIndex: _abaAtualIndex,
+          onTap: (index) {
+            setState(() {
+              _abaAtualIndex = index;
+            });
+          },
+          type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: AppColors.primarySage,
           unselectedItemColor: Colors.grey.shade400,
-          showUnselectedLabels: true,
-          type: BottomNavigationBarType.fixed, // Mantém os ícones fixos sem animações estranhas
+          selectedFontSize: 12,
+          unselectedFontSize: 12,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold),
+          unselectedLabelStyle: const TextStyle(fontWeight: FontWeight.w500),
           elevation: 0,
           items: const [
             BottomNavigationBarItem(
               icon: Icon(Icons.dashboard_rounded),
+              activeIcon: Icon(Icons.dashboard_rounded, size: 26),
               label: 'Painel',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.restaurant_menu_rounded),
-              label: 'Cardápio',
+              icon: Icon(Icons.menu_book_rounded),
+              activeIcon: Icon(Icons.menu_book_rounded, size: 26),
+              label: 'Diário',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.shopping_basket_rounded),
-              label: 'Compras',
+              icon: Icon(Icons.search_rounded),
+              activeIcon: Icon(Icons.search_rounded, size: 26),
+              label: 'Alimentos',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.workspace_premium_rounded),
+              icon: Icon(Icons.emoji_events_rounded),
+              activeIcon: Icon(Icons.emoji_events_rounded, size: 26),
               label: 'Conquistas',
             ),
           ],
