@@ -8,47 +8,29 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
-    // Tenta ligar o Firebase
-    await Firebase.initializeApp();
+    // 🔥 LIGAÇÃO DIRETA E BLINDADA DO FIREBASE
+    await Firebase.initializeApp(
+      options: const FirebaseOptions(
+        apiKey: 'AIzaSyDDonDjAPJzUQSDN6dBrG4p7fhI6YlqTSY',
+        appId: '1:210549500065:android:702ee7b33d41b046e968e0',
+        messagingSenderId: '210549500065',
+        projectId: 'nutri-life-45b6c',
+      ),
+    );
 
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
       cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
     );
 
-    // Se der tudo certo, roda o app normal
     runApp(const NutriLifeApp());
   } catch (erro) {
-    // SE O FIREBASE FALHAR: Captura o erro e mostra na tela!
+    // Mantemos o Raio-X por segurança
     runApp(
       MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          backgroundColor: Colors.white,
-          body: SafeArea(
-            child: Center(
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 64),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Ocorreu um erro no Firebase:',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      erro.toString(),
-                      style: const TextStyle(color: Colors.red, fontSize: 14),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
+          body: Center(child: Text('Erro: $erro', style: const TextStyle(color: Colors.red))),
         ),
       ),
     );
