@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
+import '../food_database/food_search_screen.dart';
 
 class MealDiaryScreen extends StatefulWidget {
   const MealDiaryScreen({Key? key}) : super(key: key);
@@ -9,19 +12,46 @@ class MealDiaryScreen extends StatefulWidget {
 }
 
 class _MealDiaryScreenState extends State<MealDiaryScreen> {
-  int _diaSelecionadoIndex = 2; // Começa no "Hoje"
-  
-  // Lista fictícia de dias para o topo do calendário horizontal premium
-  final List<Map<String, String>> _linhaDoTempoDias = [
-    {'semana': 'QUA', 'numero': '03'},
-    {'semana': 'QUI', 'numero': '04'},
-    {'semana': 'SEX', 'numero': '05'},
-    {'semana': 'SÁB', 'numero': '06'},
-    {'semana': 'DOM', 'numero': '07'},
-  ];
+  final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+  late List<DateTime> _listaDeDias;
+  int _diaSelecionadoIndex = 2; // Começa fixado no "Hoje" (meio da lista)
+
+  @override
+  void initState() {
+    super.initState();
+    _gerarLinhaDoTempoAvançada();
+  }
+
+  // 📅 Gera uma linha do tempo real com: 2 dias atrás, Hoje, e 2 dias para frente
+  void _gerarLinhaDoTempoAvançada() {
+    final hoje = DateTime.now();
+    _listaDeDias = List.generate(5, (index) {
+      return hoje.add(Duration(days: index - 2));
+    });
+  }
+
+  // Converte o objeto DateTime do calendário para a chave de texto "AAAA-MM-DD" usada no Firebase
+  String _formatarDataParaFirebase(DateTime data) {
+    return "${data.year}-${data.month.toString().padLeft(2, '0')}-${data.day.toString().padLeft(2, '0')}";
+  }
+
+  String _getNomeDiaSemana(int weekday) {
+    switch (weekday) {
+      case 1: return 'SEG';
+      case 2: return 'TER';
+      case 3: return 'QUA';
+      case 4: return 'QUI';
+      case 5: return 'SEX';
+      case 6: return 'SÁB';
+      default: return 'DOM';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final DateTime dataSelecionada = _listaDeDias[_diaSelecionadoIndex];
+    final String dataKey = _formatarDataParaFirebase(dataSelecionada);
+
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
@@ -31,7 +61,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
       ),
       body: Column(
         children: [
-          // 1. SELETOR DE DATA PREMIUM (ESTILO TIMELINE CALENDAR)
+          // 1. SELETOR DE DATA DINÂMICO PREMIUM
           Container(
             color: AppColors.primarySage,
             padding: const EdgeInsets.only(bottom: 16),
@@ -40,9 +70,9 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _linhaDoTempoDias.length,
+                itemCount: _listaDeDias.length,
                 itemBuilder: (context, index) {
-                  final item = _linhaDoTempoDias[index];
+                  final dataItem = _listaDeDias[index];
                   bool isSelecionado = index == _diaSelecionadoIndex;
                   return GestureDetector(
                     onTap: () {
@@ -61,7 +91,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            item['semana']!,
+                            _getNomeDiaSemana(dataItem.weekday),
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -70,7 +100,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            item['numero']!,
+                            dataItem.day.toString().padLeft(2, '0'),
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
@@ -86,58 +116,67 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
             ),
           ),
 
-          // 2. LISTA DE REFEIÇÕES POR TURNOS
+          // 2. MONITOR REATIVO DO DIÁRIO
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _ConstruirBlocoRefeicao(
-                  titulo: 'Café da Manhã',
-                  subtitulo: 'Recomendado: 400 - 500 kcal',
-                  caloriasConsumidas: 342,
-                  icone: Icons.wb_twilight_rounded,
-                  corIcone: Colors.amber,
-                  alimentos: [
-                    _ItemAlimentoFicticio(nome: 'Pão Integral', detalhe: '2 fatias (50g)', kcal: 122),
-                    _ItemAlimentoFicticio(nome: 'Ovo Mexido', detalhe: '2 unidades', kcal: 140),
-                    _ItemAlimentoFicticio(nome: 'Café com Leite Desnatado', detalhe: '200ml', kcal: 80),
+            child: StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('usuarios')
+                  .doc(_userId)
+                  .collection('diario')
+                  .doc(dataKey)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                List<dynamic> todosAlimentos = [];
+
+                if (snapshot.hasData && snapshot.data!.exists) {
+                  final dados = snapshot.data!.data() as Map<String, dynamic>;
+                  todosAlimentos = dados['historico_alimentos'] ?? [];
+                }
+
+                // Separa os alimentos em caixas de turnos específicas filtrando o histórico da nuvem
+                final cafeDaManha = todosAlimentos.where((a) => a['turno'] == 'Café da Manhã').toList();
+                final almoco = todosAlimentos.where((a) => a['turno'] == 'Almoço').toList();
+                final lanche = todosAlimentos.where((a) => a['turno'] == 'Lanche').toList();
+                final jantar = todosAlimentos.where((a) => a['turno'] == 'Jantar').toList();
+
+                return ListView(
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    _ConstruirBlocoTurno(
+                      titulo: 'Café da Manhã',
+                      subtitulo: 'Meta sugerida: 400 - 500 kcal',
+                      icone: Icons.wb_twilight_rounded,
+                      corIcone: Colors.amber,
+                      alimentosDoTurno: cafeDaManha,
+                    ),
+                    const SizedBox(height: 16),
+                    _ConstruirBlocoTurno(
+                      titulo: 'Almoço',
+                      subtitulo: 'Meta sugerida: 600 - 800 kcal',
+                      icone: Icons.wb_sunny_rounded,
+                      corIcone: Colors.orange,
+                      alimentosDoTurno: almoco,
+                    ),
+                    const SizedBox(height: 16),
+                    _ConstruirBlocoTurno(
+                      titulo: 'Lanche',
+                      subtitulo: 'Meta sugerida: 200 - 300 kcal',
+                      icone: Icons.fastfood_rounded,
+                      corIcone: AppColors.accentPeach,
+                      alimentosDoTurno: lanche,
+                    ),
+                    const SizedBox(height: 16),
+                    _ConstruirBlocoTurno(
+                      titulo: 'Jantar',
+                      subtitulo: 'Meta sugerida: 400 - 600 kcal',
+                      icone: Icons.nights_stay_rounded,
+                      corIcone: Colors.indigo,
+                      alimentosDoTurno: jantar,
+                    ),
+                    const SizedBox(height: 24),
                   ],
-                ),
-                const SizedBox(height: 16),
-                _ConstruirBlocoRefeicao(
-                  titulo: 'Almoço',
-                  subtitulo: 'Recomendado: 600 - 800 kcal',
-                  caloriasConsumidas: 585,
-                  icone: Icons.wb_sunny_rounded,
-                  corIcone: Colors.orange,
-                  alimentos: [
-                    _ItemAlimentoFicticio(nome: 'Arroz Integral Cozido', detalhe: '150g', kcal: 195),
-                    _ItemAlimentoFicticio(nome: 'Feijão Carioca', detalhe: '1 concha (100g)', kcal: 76),
-                    _ItemAlimentoFicticio(nome: 'Filé de Frango Grelhado', detalhe: '120g', kcal: 198),
-                    _ItemAlimentoFicticio(nome: 'Salada de Alface e Tomate', detalhe: '1 prato cheio', kcal: 35),
-                    _ItemAlimentoFicticio(nome: 'Azeite de Oliva Extra Virgem', detalhe: '1 colher de sopa', kcal: 81),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                _ConstruirBlocoRefeicao(
-                  titulo: 'Lanche da Tarde',
-                  subtitulo: 'Recomendado: 200 - 300 kcal',
-                  caloriasConsumidas: 0, // Turno vazio para demonstrar estado dinâmico
-                  icone: Icons.fastfood_rounded,
-                  corIcone: AppColors.accentPeach,
-                  alimentos: [],
-                ),
-                const SizedBox(height: 16),
-                _ConstruirBlocoRefeicao(
-                  titulo: 'Jantar',
-                  subtitulo: 'Recomendado: 400 - 600 kcal',
-                  caloriasConsumidas: 0,
-                  icone: Icons.nights_stay_rounded,
-                  corIcone: Colors.indigo,
-                  alimentos: [],
-                ),
-                const SizedBox(height: 24),
-              ],
+                );
+              },
             ),
           ),
         ],
@@ -146,26 +185,29 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
   }
 }
 
-// Card estrutural de cada turno de refeição
-class _ConstruirBlocoRefeicao extends StatelessWidget {
+class _ConstruirBlocoTurno extends StatelessWidget {
   final String titulo;
   final String subtitulo;
-  final int caloriasConsumidas;
   final IconData icone;
   final Color corIcone;
-  final List<_ItemAlimentoFicticio> alimentos;
+  final List<dynamic> alimentosDoTurno;
 
-  const _ConstruirBlocoRefeicao({
+  const _ConstruirBlocoTurno({
     required this.titulo,
     required this.subtitulo,
-    required this.caloriasConsumidas,
     required this.icone,
     required this.corIcone,
-    required this.alimentos,
+    required this.alimentosDoTurno,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Soma as calorias consumidas apenas neste turno específico
+    int totalKcalTurno = 0;
+    for (var alimento in alimentosDoTurno) {
+      totalKcalTurno += (alimento['calorias'] as num).toInt();
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -181,7 +223,6 @@ class _ConstruirBlocoRefeicao extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho da refeição
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -192,48 +233,63 @@ class _ConstruirBlocoRefeicao extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        titulo,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      Text(
-                        subtitulo,
-                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                      ),
+                      Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                      Text(subtitulo, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                     ],
                   ),
                 ),
                 Text(
-                  '$caloriasConsumidas kcal',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.primarySage,
-                  ),
+                  '$totalKcalTurno kcal',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage),
                 ),
               ],
             ),
           ),
           const Divider(height: 1),
 
-          // Lista interna de alimentos consumidos nesse bloco
-          if (alimentos.isNotEmpty)
+          // Renderiza dinamicamente a lista de alimentos inseridos neste turno
+          if (alimentosDoTurno.isNotEmpty)
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: alimentos.length,
+              itemCount: alimentosDoTurno.length,
               separatorBuilder: (context, index) => Divider(color: Colors.grey.shade100, height: 1),
-              itemBuilder: (context, index) => alimentos[index],
+              itemBuilder: (context, index) {
+                final item = alimentosDoTurno[index];
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item['nome'] ?? 'Alimento',
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                            const SizedBox(height: 2),
+                            Text("Qtd: ${item['quantidade']}x (${item['medida_escolhida'] ?? 'porção'})",
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ),
+                      Text('${item['calorias']} kcal',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textDark)),
+                    ],
+                  ),
+                );
+              },
             ),
 
-          // Botão de Adicionar Alimento específico deste turno
+          // Direciona o paciente para a tela de pesquisa passando o Turno correto por parâmetro
           InkWell(
             onTap: () {
-              // Lógica de navegação direta para a busca com o parâmetro do turno
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => FoodSearchScreen(turno: titulo),
+                ),
+              );
             },
             borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
             child: Container(
@@ -247,70 +303,10 @@ class _ConstruirBlocoRefeicao extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: const [
                   Icon(Icons.add, color: AppColors.primarySage, size: 18),
-                  SizedBox(width: 6),
-                  Text(
-                    'Adicionar Alimento',
-                    style: TextStyle(
-                      color: AppColors.primarySage,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+                  const SizedBox(width: 6),
+                  Text('Adicionar Alimento', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 13)),
                 ],
               ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// Widget de linha para cada alimento listado no diário
-class _ItemAlimentoFicticio extends StatelessWidget {
-  final String nome;
-  final String detalhe;
-  final int kcal;
-
-  const _ItemAlimentoFicticio({
-    required this.nome,
-    required this.detalhe,
-    required this.kcal,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  nome,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  detalhe,
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
-                ),
-              ],
-            ),
-          ),
-          Text(
-            '$kcal kcal',
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textDark,
             ),
           ),
         ],
