@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
 
       # ==========================================
-      # TRUQUE MÁGICO 3.0: INJEÇÃO BLINDADA
+      # TRUQUE MÁGICO 4.0: O MÉTODO INQUEBRÁVEL
       # ==========================================
       - name: Configurar Motor Android e Firebase
         run: |
@@ -35,21 +35,37 @@ jobs:
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # Verifica e move a chave do Firebase
+          # 1. Move a chave do Firebase para o cofre do App
           if [ -f "google-services.json" ]; then
-            echo "✅ Chave do Firebase encontrada! Movendo para o app..."
+            echo "✅ Chave encontrada! Movendo..."
             mv google-services.json android/app/
           else
-            echo "❌ ERRO CRÍTICO: O arquivo google-services.json não está na raiz!"
-            exit 1 # Para a compilação aqui mesmo se não achar a chave
+            echo "❌ ERRO CRÍTICO: google-services.json faltando na raiz!"
+            exit 1
           fi
           
-          # Ajustar a versão mínima (API 21)
+          # 2. Ajusta a versão mínima para o Firebase funcionar (API 21)
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # Injeção à prova de falhas: Busca pela âncora exata do Flutter e insere o Firebase
-          sed -i '/dev.flutter.settings/a \    id "com.google.gms.google-services" version "4.4.1" apply false' android/settings.gradle
-          sed -i '/dev.flutter.flutter-gradle-plugin/a \    id "com.google.gms.google-services"' android/app/build.gradle
+          # 3. Cria a chamada do motor do Google do zero (Sem depender do template do Flutter)
+          cat << 'EOF' > android/build.gradle.tmp
+          buildscript {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+              dependencies {
+                  classpath 'com.google.gms:google-services:4.4.1'
+              }
+          }
+          EOF
+          
+          # 4. Cola o arquivo original embaixo do nosso bloco e salva
+          cat android/build.gradle >> android/build.gradle.tmp
+          mv android/build.gradle.tmp android/build.gradle
+          
+          # 5. Adiciona o ativador do Google na ÚLTIMA linha do arquivo (Forma oficial recomendada)
+          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
