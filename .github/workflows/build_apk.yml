@@ -27,13 +27,16 @@ jobs:
           channel: 'stable'
 
       # ==========================================
-      # TRUQUE MÁGICO: Gera a pasta Android nativa
+      # TRUQUE MÁGICO: Gera a pasta Android e 
+      # ajusta a versão mínima exigida pelo Firebase
       # ==========================================
-      - name: Gerar Motor Android
+      - name: Gerar Motor Android e Ajustar Firebase
         run: |
           flutter create --platforms android --project-name nutri_life temp_app
           cp -r temp_app/android ./android
           rm -rf temp_app
+          # O comando abaixo entra no arquivo do Android e troca a versão mínima para 21
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
