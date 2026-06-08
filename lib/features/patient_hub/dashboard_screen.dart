@@ -11,13 +11,75 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  // Pega o ID do usuário logado (ou usa um ID padrão de teste se não houver auth ativa)
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
 
-  // Função para pegar a data de hoje formatada (Ano-Mês-Dia) para criar o diário do dia correto
   String _getTodayDateKey() {
     final agora = DateTime.now();
     return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
+  }
+
+  // ⚖️ FUNÇÃO PREMIUM: Registra o peso atual em uma linha do tempo histórica no Firebase
+  void _abrirDialogoRegistrarPeso(BuildContext context) {
+    final txtController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registrar Peso Atual', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        content: TextField(
+          controller: txtController,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          decoration: const InputDecoration(
+            hintText: 'Ex: 78.5',
+            suffixText: 'kg',
+            focusedBorder: UnderlineInputBorder(borderSide: BorderSide(color: AppColors.primarySage)),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage),
+            onPressed: () async {
+              if (txtController.text.isNotEmpty) {
+                double? pesoDigitado = double.tryParse(txtController.text.replaceAll(',', '.'));
+                if (pesoDigitado != null) {
+                  final agora = DateTime.now();
+                  final dataKey = _getTodayDateKey();
+                  
+                  // Salva na linha do tempo de pesagens do usuário
+                  await FirebaseFirestore.instance
+                      .collection('usuarios')
+                      .doc(_userId)
+                      .collection('historico_peso')
+                      .doc(dataKey)
+                      .set({
+                    'peso': pesoDigitado,
+                    'data': dataKey,
+                    'timestamp': agora.millisecondsSinceEpoch,
+                    'mes': _getMesAbreviado(agora.month),
+                  });
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Peso registrado com sucesso! 📈'), backgroundColor: AppColors.primarySage),
+                    );
+                  }
+                }
+              }
+            },
+            child: const Text('Salvar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMesAbreviado(int mes) {
+    const meses = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+    return meses[mes - 1];
   }
 
   @override
@@ -30,14 +92,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: const Text('Meu Painel'),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.account_circle, size: 28),
-            onPressed: () {}, // Futura tela de perfil
-          )
-        ],
       ),
-      // 🟢 STREAMBUILDER: Fica ouvindo o Firebase em tempo real. Qualquer mudança na nuvem atualiza a tela na hora!
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance
             .collection('usuarios')
@@ -46,7 +101,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             .doc(dataHoje)
             .snapshots(),
         builder: (context, snapshot) {
-          // Valores padrão caso o documento do dia ainda não tenha sido criado no Firebase
           int caloriasConsumidas = 0;
           int metaCalorias = 2000;
           double carbos = 0;
@@ -76,15 +130,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 const Text(
                   'Resumo de Hoje',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark),
                 ),
                 const SizedBox(height: 20),
                 
-                // Card de Calorias e Macronutrientes Dinâmico
                 _ConstruirCardCaloriasPremium(
                   consumido: caloriasConsumidas,
                   meta: metaCalorias,
@@ -96,12 +145,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 
                 const SizedBox(height: 24),
                 
-                // Card de Hidratação Conectado à Nuvem
                 _ConstruirCardAguaGamificado(
                   consumido: aguaConsumida,
                   meta: metaAgua,
                   userId: _userId,
                   dataKey: dataHoje,
+                ),
+                
+                const SizedBox(height: 24),
+
+                // ⚖️ NOVO CARD: Controle de Peso na Tela Inicial do App
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.grey.shade100),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                          const SizedBox(height: 4),
+                          Text('Mantenha seu histórico atualizado', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                        ],
+                      ),
+                      ElevatedButton.icon(
+                        onPressed: () => _abrirDialogoRegistrarPeso(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primarySage.withOpacity(0.1),
+                          shadowColor: Colors.transparent,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        icon: const Icon(Icons.scale_rounded, color: AppColors.primarySage, size: 18),
+                        label: const Text('Pesar', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -134,19 +217,12 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     double progressoCalorias = consumido / meta;
-
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Column(
         children: [
@@ -170,23 +246,8 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        '$restante',
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
-                        ),
-                      ),
-                      Text(
-                        'kcal\nrestantes',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                      Text('$restante', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                      Text('kcal\nrestantes', textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 ],
@@ -215,14 +276,7 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
       children: [
         Icon(icone, color: Colors.grey.shade400, size: 20),
         const SizedBox(height: 4),
-        Text(
-          valor,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: AppColors.textDark,
-          ),
-        ),
+        Text(valor, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
         Text(titulo, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
       ],
     );
@@ -235,28 +289,16 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
         Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const SizedBox(height: 8),
         Container(
-          width: 60,
-          height: 6,
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(10),
-          ),
+          width: 60, height: 6,
+          decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(10)),
           child: FractionallySizedBox(
             alignment: Alignment.centerLeft,
             widthFactor: progresso.clamp(0.0, 1.0),
-            child: Container(
-              decoration: BoxDecoration(
-                color: cor,
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
+            child: Container(decoration: BoxDecoration(color: cor, borderRadius: BorderRadius.circular(10))),
           ),
         ),
         const SizedBox(height: 8),
-        Text(
-          '${atual.toInt()}/${meta.toInt()}g',
-          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
-        ),
+        Text('${atual.toInt()}/${meta.toInt()}g', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
       ],
     );
   }
@@ -276,7 +318,6 @@ class _ConstruirCardAguaGamificado extends StatelessWidget {
     required this.dataKey,
   }) : super(key: key);
 
-  // 🔥 INTERAÇÃO EM TEMPO REAL COM O CLOUD FIRESTORE
   void _adicionarCopoAgua() async {
     final docRef = FirebaseFirestore.instance
         .collection('usuarios')
@@ -284,9 +325,8 @@ class _ConstruirCardAguaGamificado extends StatelessWidget {
         .collection('diario')
         .doc(dataKey);
 
-    // Usa a estratégia do 'Set com Merge' para criar o documento caso ele não exista no dia
     await docRef.set({
-      'agua_consumida': FieldValue.increment(250), // Soma 250ml direto na nuvem
+      'agua_consumida': FieldValue.increment(250),
       'meta_agua': meta,
     }, SetOptions(merge: true));
   }
@@ -296,19 +336,9 @@ class _ConstruirCardAguaGamificado extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade300, Colors.blue.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        gradient: LinearGradient(colors: [Colors.blue.shade300, Colors.blue.shade500], begin: Alignment.topLeft, end: Alignment.bottomRight),
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.blue.withOpacity(0.3),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [BoxShadow(color: Colors.blue.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -316,33 +346,14 @@ class _ConstruirCardAguaGamificado extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                'Hidratação',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+              const Text('Hidratação', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 4),
-              Text(
-                '$consumido / $meta ml',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.9),
-                  fontSize: 14,
-                ),
-              ),
+              Text('$consumido / $meta ml', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14)),
             ],
           ),
           ElevatedButton(
-            onPressed: _adicionarCopoAgua, // Aciona o motor na nuvem!
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.blue.shade600,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
+            onPressed: _adicionarCopoAgua,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: Colors.blue.shade600, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
             child: const Text('+ Copo'),
           ),
         ],
