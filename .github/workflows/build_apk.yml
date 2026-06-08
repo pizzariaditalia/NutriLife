@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
 
       # ==========================================
-      # TRUQUE MÁGICO 2.1: CONFIGURADOR FIREBASE ATUALIZADO
+      # TRUQUE MÁGICO 3.0: INJEÇÃO BLINDADA
       # ==========================================
       - name: Configurar Motor Android e Firebase
         run: |
@@ -35,22 +35,21 @@ jobs:
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # Move a chave do Firebase da raiz para o cofre do Android
+          # Verifica e move a chave do Firebase
           if [ -f "google-services.json" ]; then
             echo "✅ Chave do Firebase encontrada! Movendo para o app..."
             mv google-services.json android/app/
           else
-            echo "⚠️ AVISO: google-services.json não encontrado na raiz!"
+            echo "❌ ERRO CRÍTICO: O arquivo google-services.json não está na raiz!"
+            exit 1 # Para a compilação aqui mesmo se não achar a chave
           fi
           
-          # Ajustar a versão mínima exigida pelo banco de dados (API 21)
+          # Ajustar a versão mínima (API 21)
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # Injetar o plugin do Google Services no NOVO arquivo do Flutter (settings.gradle)
-          sed -i 's/id "com.android.application" version/id "com.google.gms.google-services" version "4.4.1" apply false\n    id "com.android.application" version/g' android/settings.gradle
-          
-          # Aplicar o plugin dentro do aplicativo
-          sed -i 's/id "com.android.application"/id "com.android.application"\n    id "com.google.gms.google-services"/g' android/app/build.gradle
+          # Injeção à prova de falhas: Busca pela âncora exata do Flutter e insere o Firebase
+          sed -i '/dev.flutter.settings/a \    id "com.google.gms.google-services" version "4.4.1" apply false' android/settings.gradle
+          sed -i '/dev.flutter.flutter-gradle-plugin/a \    id "com.google.gms.google-services"' android/app/build.gradle
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
