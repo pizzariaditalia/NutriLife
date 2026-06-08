@@ -27,16 +27,28 @@ jobs:
           channel: 'stable'
 
       # ==========================================
-      # TRUQUE MÁGICO: Gera a pasta Android e 
-      # ajusta a versão mínima exigida pelo Firebase
+      # TRUQUE MÁGICO 2.0: CONFIGURADOR FIREBASE
       # ==========================================
-      - name: Gerar Motor Android e Ajustar Firebase
+      - name: Configurar Motor Android e Firebase
         run: |
           flutter create --platforms android --project-name nutri_life temp_app
           cp -r temp_app/android ./android
           rm -rf temp_app
-          # O comando abaixo entra no arquivo do Android e troca a versão mínima para 21
+          
+          # Move a chave do Firebase da raiz para a pasta Android profunda
+          if [ -f "google-services.json" ]; then
+            echo "✅ Chave do Firebase encontrada! Movendo para o cofre..."
+            mv google-services.json android/app/
+          else
+            echo "⚠️ AVISO: google-services.json não encontrado na raiz!"
+          fi
+          
+          # Ajustar a versão mínima exigida pelo banco de dados
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          
+          # Injetar o plugin do Google Services automaticamente no código do Android
+          sed -i 's/id "com.android.application" version "\([^"]*\)" apply false/id "com.android.application" version "\1" apply false\n    id "com.google.gms.google-services" version "4.4.1" apply false/g' android/build.gradle
+          sed -i 's/id "com.android.application"/id "com.android.application"\n    id "com.google.gms.google-services"/g' android/app/build.gradle
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
