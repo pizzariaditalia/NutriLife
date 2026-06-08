@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/theme/app_colors.dart';
-import 'features/onboarding/onboarding_screen.dart'; // Vamos pular direto para o Onboarding
+import 'features/auth/login_screen.dart'; 
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔴 FIREBASE COMENTADO TEMPORARIAMENTE PARA TESTE DE TELA
-  // await Firebase.initializeApp();
-  // FirebaseFirestore.instance.settings = const Settings(
-  //   persistenceEnabled: true,
-  //   cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  // );
+  // 🔥 FIREBASE REATIVADO OFICIALMENTE!
+  await Firebase.initializeApp();
+
+  // Ativando o Cache offline maravilhoso
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
 
   runApp(const NutriLifeApp());
 }
@@ -47,8 +51,8 @@ class NutriLifeApp extends StatelessWidget {
           bodyMedium: TextStyle(color: AppColors.textDark),
         ),
       ),
-      // App inicia no Onboarding para você conseguir testar o fluxo visual
-      home: const OnboardingScreen(),
+      // App inicia na Tela de Login para fazermos o cadastro real!
+      home: const LoginScreen(),
     );
   }
 }
