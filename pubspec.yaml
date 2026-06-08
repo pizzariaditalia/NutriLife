@@ -9,9 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Nossos bancos de dados
+  # Nossos bancos de dados e autenticação na nuvem
   firebase_core: any
   cloud_firestore: any
+  firebase_auth: any
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
