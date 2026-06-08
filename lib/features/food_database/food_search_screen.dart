@@ -276,9 +276,8 @@ class _ConstruirBottomSheetPorcaoState
   }
 
   void _salvarNoDiario() {
-    // Aqui no futuro salvaremos no Firebase offline
-    Navigator.pop(context); // Fecha o BottomSheet
-    Navigator.pop(context); // Volta para a tela principal (Dashboard)
+    Navigator.pop(context); 
+    Navigator.pop(context); 
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -305,7 +304,7 @@ class _ConstruirBottomSheetPorcaoState
               width: 40,
               height: 4,
               margin: const EdgeInsets.only(bottom: 24),
-              align: Alignment.center,
+              alignment: Alignment.center, // CORREÇÃO APLICADA AQUI
               decoration: BoxDecoration(
                 color: Colors.grey.shade400,
                 borderRadius: BorderRadius.circular(2),
