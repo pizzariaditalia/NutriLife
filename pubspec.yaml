@@ -9,10 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  # Nossos bancos de dados e autenticação na nuvem
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
+  mobile_scanner: ^5.0.0 # 📸 O motor de câmera real de alta velocidade
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
