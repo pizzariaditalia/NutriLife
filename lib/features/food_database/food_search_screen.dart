@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
-import 'barcode_scanner_screen.dart'; // IMPORTAÇÃO DO NOVO LEITOR
+import 'barcode_scanner_screen.dart';
 
 class Alimento {
   final String nome;
@@ -39,18 +39,31 @@ class FoodSearchScreen extends StatefulWidget {
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   
+  // 📚 BASE DE DADOS EXPANDIDA EM MASSA (PADRÃO PREMIUM TACO)
   final List<Alimento> _bancoDeAlimentos = [
-    Alimento(nome: 'Arroz Branco Cozido', porcaoBase: '100g', calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2, medidasCaseiras: ['1 Colher de sopa cheia (25g)', '1 Escumadeira média (100g)']),
-    Alimento(nome: 'Feijão Carioca Cozido', porcaoBase: '100g', calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5, medidasCaseiras: ['1 Concha média cheia (100g)', '1 Colher de sopa (20g)']),
+    Alimento(nome: 'Arroz Branco Cozido', porcaoBase: '100g', calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2, medidasCaseiras: ['1 Colher de sopa (25g)', '1 Escumadeira (100g)']),
+    Alimento(nome: 'Arroz Integral Cozido', porcaoBase: '100g', calorias: 124, carbos: 25.8, proteinas: 2.6, gorduras: 1.0, medidasCaseiras: ['1 Colher de sopa (25g)', '1 Escumadeira (100g)']),
+    Alimento(nome: 'Feijão Carioca Cozido', porcaoBase: '100g', calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5, medidasCaseiras: ['1 Concha média (100g)']),
+    Alimento(nome: 'Feijão Preto Cozido', porcaoBase: '100g', calorias: 77, carbos: 14.0, proteinas: 4.5, gorduras: 0.5, medidasCaseiras: ['1 Concha média (100g)']),
     Alimento(nome: 'Peito de Frango Grelhado', porcaoBase: '100g', calorias: 165, carbos: 0.0, proteinas: 31.5, gorduras: 3.6, medidasCaseiras: ['1 Filé médio (100g)', '1 Filé grande (150g)']),
-    Alimento(nome: 'Ovo Cozido', porcaoBase: '1 Unidade (50g)', calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3, medidasCaseiras: ['1 Unidade inteira', '2 Unidades inteiras']),
-    Alimento(nome: 'Pão Francês', porcaoBase: '1 Unidade (50g)', calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5, medidasCaseiras: ['1 Unidade inteira']),
-    Alimento(nome: 'Banana Prata', porcaoBase: '1 Unidade (100g)', calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3, medidasCaseiras: ['1 Unidade média']),
-    Alimento(nome: 'Aveia em Flocos', porcaoBase: '30g', calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2, medidasCaseiras: ['1 Colher de sopa cheia (15g)']),
-    Alimento(nome: 'Whey Protein (Concentrado)', porcaoBase: '30g', calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0, medidasCaseiras: ['1 Dosador cheio (30g)']),
-    Alimento(nome: 'Pasta de Amendoim', porcaoBase: '15g', calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4, medidasCaseiras: ['1 Colher de sopa cheia (15g)']),
-    Alimento(nome: 'Azeite de Oliva Extra Virgem', porcaoBase: '13ml', calorias: 119, carbos: 0.0, proteinas: 0.0, gorduras: 13.0, medidasCaseiras: ['1 Colher de sopa (13ml)']),
-    Alimento(nome: 'Biscoito Recheado de Chocolate', porcaoBase: '30g', calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0, isProcessado: true, alertaProcessado: 'Alto teor de açúcar refinado e gordura hidrogenada.', medidasCaseiras: ['3 Unidades (30g)']),
+    Alimento(nome: 'Patinho Moído Grelhado', porcaoBase: '100g', calorias: 219, carbos: 0.0, proteinas: 35.9, gorduras: 7.3, medidasCaseiras: ['3 Colheres de sopa (100g)']),
+    Alimento(nome: 'Ovo Cozido', porcaoBase: '50g', calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3, medidasCaseiras: ['1 Unidade inteira']),
+    Alimento(nome: 'Ovo Frito', porcaoBase: '50g', calorias: 120, carbos: 0.6, proteinas: 6.3, gorduras: 10.1, medidasCaseiras: ['1 Unidade inteira']),
+    Alimento(nome: 'Pão Francês', porcaoBase: '50g', calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5, medidasCaseiras: ['1 Unidade (50g)']),
+    Alimento(nome: 'Pão de Forma Integral', porcaoBase: '50g', calorias: 110, carbos: 22.0, proteinas: 4.5, gorduras: 1.1, medidasCaseiras: ['2 Fatias (50g)']),
+    Alimento(nome: 'Tapioca (Goma Pronta)', porcaoBase: '50g', calorias: 120, carbos: 27.0, proteinas: 0.0, gorduras: 0.0, medidasCaseiras: ['3 Colheres de sopa (50g)']),
+    Alimento(nome: 'Cuscuz de Milho', porcaoBase: '100g', calorias: 112, carbos: 25.0, proteinas: 2.2, gorduras: 0.6, medidasCaseiras: ['1 Pedaço médio (100g)']),
+    Alimento(nome: 'Banana Prata', porcaoBase: '100g', calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3, medidasCaseiras: ['1 Unidade média']),
+    Alimento(nome: 'Maçã Fuji', porcaoBase: '100g', calorias: 56, carbos: 15.0, proteinas: 0.3, gorduras: 0.2, medidasCaseiras: ['1 Unidade pequena']),
+    Alimento(nome: 'Mamão Papaia', porcaoBase: '100g', calorias: 46, carbos: 11.6, proteinas: 0.5, gorduras: 0.1, medidasCaseiras: ['Metade de uma unidade']),
+    Alimento(nome: 'Leite Integral Fluidificado', porcaoBase: '200ml', calorias: 120, carbos: 10.0, proteinas: 6.0, gorduras: 6.7, medidasCaseiras: ['1 Copo americano']),
+    Alimento(nome: 'Leite Desnatado Fluidificado', porcaoBase: '200ml', calorias: 70, carbos: 10.0, proteinas: 6.0, gorduras: 0.0, medidasCaseiras: ['1 Copo americano']),
+    Alimento(nome: 'Queijo Muçarela', porcaoBase: '30g', calorias: 96, carbos: 0.9, proteinas: 7.0, gorduras: 7.3, medidasCaseiras: ['1 Fatia fina']),
+    Alimento(nome: 'Queijo Minas Frescal', porcaoBase: '30g', calorias: 68, carbos: 1.0, proteinas: 5.2, gorduras: 5.0, medidasCaseiras: ['1 Fatia média']),
+    Alimento(nome: 'Aveia em Flocos', porcaoBase: '30g', calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2, medidasCaseiras: ['2 Colheres de sopa']),
+    Alimento(nome: 'Whey Protein Concentrado', porcaoBase: '30g', calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0, medidasCaseiras: ['1 Dosador cheio']),
+    Alimento(nome: 'Pasta de Amendoim', porcaoBase: '15g', calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4, medidasCaseiras: ['1 Colher de sopa']),
+    Alimento(nome: 'Biscoito Recheado Chocolate', porcaoBase: '30g', calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0, isProcessado: true, alertaProcessado: 'Açúcares refinados e gordura hidrogenada.', medidasCaseiras: ['3 Unidades']),
   ];
 
   List<Alimento> _resultados = [];
@@ -96,7 +109,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
-                // CAMPO DE PESQUISA POR TEXTO
                 Expanded(
                   child: TextField(
                     controller: _searchController,
@@ -113,8 +125,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                   ),
                 ),
                 const SizedBox(width: 10),
-                
-                // ⚡ NOVO BOTÃO ULTRA-PREMIUM: ATALHO PARA O LEITOR DE CÓDIGO DE BARRAS
                 Container(
                   decoration: BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.circular(12)),
                   child: IconButton(
@@ -122,9 +132,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                     onPressed: () {
                       Navigator.push(
                         context,
-                        MaterialPageRoute(
-                          builder: (context) => BarcodeScannerScreen(turno: widget.turno),
-                        ),
+                        MaterialPageRoute(builder: (context) => BarcodeScannerScreen(turno: widget.turno)),
                       );
                     },
                   ),
@@ -134,7 +142,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
           ),
           Expanded(
             child: _resultados.isEmpty
-                ? const Center(child: Text('Nenhum alimento encontrado na base.', style: TextStyle(color: Colors.grey, fontSize: 16)))
+                ? const Center(child: Text('Nenhum alimento encontrado.', style: TextStyle(color: Colors.grey, fontSize: 16)))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _resultados.length,
@@ -277,7 +285,7 @@ class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: BoxConstraints.expand == null ? CrossAxisAlignment.stretch : CrossAxisAlignment.stretch,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
             Text(widget.alimento.nome, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage), textAlign: TextAlign.center),
