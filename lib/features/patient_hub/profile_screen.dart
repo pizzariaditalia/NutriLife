@@ -35,7 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _carregarDadosPerfil();
   }
 
-  // 📡 CARREGA DADOS: Busca as informações salvas no Firebase para preencher a tela
+  // 📡 CARREGA DADOS
   void _carregarDadosPerfil() async {
     try {
       final doc = await FirebaseFirestore.instance.collection('usuarios').doc(_userId).get();
@@ -47,20 +47,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _alturaController.text = (dados['altura'] ?? '').toString();
           _pesoController.text = (dados['peso_inicial'] ?? '').toString();
           _hobbyController.text = dados['hobby'] ?? '';
-          _generoSelecionated = dados['genero'] ?? 'Masculino';
+          _generoSelecionado = dados['genero'] ?? 'Masculino'; // CORRIGIDO
           _objetivoSelecionado = dados['objetivo'] ?? 'Saúde e Longevidade';
           _atividadeSelecionada = dados['nivel_atividade'] ?? 'Moderadamente Ativo';
           _restricaoSelecionada = dados['restricao_alimentar'] ?? 'Nenhuma';
         });
       }
     } catch (e) {
-      // Se der erro ou não existir, mantém os campos limpos para preenchimento
+      // Se der erro ou não existir, mantém os campos limpos
     } finally {
       setState(() => _carregando = false);
     }
   }
 
-  // 🔥 SALVA NA NUVEM: Atualiza o prontuário do paciente no Firebase
+  // 🔥 SALVA NA NUVEM
   void _salvarPerfil() async {
     if (_formKey.currentState!.validate()) {
       setState(() => _carregando = true);
@@ -69,12 +69,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
       double? altura = double.tryParse(_alturaController.text.replaceAll(',', '.'));
       int? idade = int.tryParse(_idadeController.text);
 
-      // Cálculo Premium automático de recomendação de hidratação baseada no peso
       int metaAguaCalculada = peso != null ? (peso * 35).round() : 2500;
 
       await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
         'nome': _nomeController.text,
-        'idade': Glen,
+        'idade': idade, // CORRIGIDO: Removido o 'Glen'
         'genero': _generoSelecionado,
         'altura': altura,
         'peso_inicial': peso,
@@ -114,7 +113,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // Avatar Placeholder Premium
                     Center(
                       child: Stack(
                         children: [
@@ -123,12 +121,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             backgroundColor: AppColors.primarySage.withOpacity(0.15),
                             child: const Icon(Icons.person, size: 55, color: AppColors.primarySage),
                           ),
-                          Positioned(
+                          const Positioned(
                             bottom: 0, right: 0,
                             child: CircleAvatar(
                               radius: 16,
                               backgroundColor: AppColors.primarySage,
-                              child: const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                              child: Icon(Icons.camera_alt, size: 14, color: Colors.white),
                             ),
                           )
                         ],
