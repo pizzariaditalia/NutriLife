@@ -14,15 +14,15 @@ class MealDiaryScreen extends StatefulWidget {
 class _MealDiaryScreenState extends State<MealDiaryScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
   late List<DateTime> _listaDeDias;
-  int _diaSelecionadoIndex = 2; // Começa fixado no "Hoje"
+  int _diaSelecionadoIndex = 2; 
 
   @override
   void initState() {
     super.initState();
-    _gerarLinhaDoTempoAvancada(); // CORRIGIDO: Sem caracteres especiais
+    _gerarLinhaDoTempoAvancada();
   }
 
-  void _gerarLinhaDoTempoAvancada() { // CORRIGIDO: Sem caracteres especiais
+  void _gerarLinhaDoTempoAvancada() {
     final hoje = DateTime.now();
     _listaDeDias = List.generate(5, (index) {
       return hoje.add(Duration(days: index - 2));
@@ -202,11 +202,7 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
   });
 
   void _executarQuickLog(BuildContext context) async {
-    final docRef = FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(userId)
-        .collection('diario')
-        .doc(dataKey);
+    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataKey);
 
     await docRef.set({
       'calorias_consumidas': FieldValue.increment(kcalPadrao),
@@ -227,7 +223,24 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
 
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$titulo computado com sucesso via Quick-Log! 🎯'), backgroundColor: AppColors.primarySage),
+        SnackBar(content: Text('$titulo computado com sucesso! 🎯'), backgroundColor: AppColors.primarySage),
+      );
+    }
+  }
+
+  // 🗑️ FUNÇÃO DE DELETAR (A BORRACHA)
+  void _deletarAlimento(BuildContext context, Map<String, dynamic> item) async {
+    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataKey);
+
+    // Subtrai as calorias e remove o item específico da lista na nuvem
+    await docRef.update({
+      'calorias_consumidas': FieldValue.increment(-(item['calorias'] as num).toInt()),
+      'historico_alimentos': FieldValue.arrayRemove([item])
+    });
+
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${item['nome']} removido.'), backgroundColor: Colors.redAccent),
       );
     }
   }
@@ -257,7 +270,7 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
                 Expanded(
                   child: Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                 ),
-                Text('$totalKcalTurno kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)), // CORRIGIDO: fontWeight
+                Text('$totalKcalTurno kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
               ],
             ),
           ),
@@ -303,6 +316,8 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
               ],
             ),
           ),
+          
+          // LISTA DE ALIMENTOS COM SWIPE TO DELETE
           if (alimentosDoTurno.isNotEmpty)
             ListView.separated(
               shrinkWrap: true,
@@ -311,23 +326,38 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
               separatorBuilder: (context, index) => Divider(color: Colors.grey.shade100, height: 1),
               itemBuilder: (context, index) {
                 final item = alimentosDoTurno[index];
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(item['nome'] ?? 'Alimento', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                            const SizedBox(height: 2),
-                            Text("Qtd: ${item['quantidade']}x (${item['medida_escolhida'] ?? 'porção'})", style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                          ],
+                
+                // O widget Dismissible é o que cria a magia de "Deslizar para apagar"
+                return Dismissible(
+                  key: Key(item['timestamp'].toString()), // Identificador único na nuvem
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20.0),
+                    color: Colors.redAccent,
+                    child: const Icon(Icons.delete_outline, color: Colors.white),
+                  ),
+                  onDismissed: (direction) {
+                    _deletarAlimento(context, item);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(item['nome'] ?? 'Alimento', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                              const SizedBox(height: 2),
+                              Text("Qtd: ${item['quantidade']}x (${item['medida_escolhida'] ?? 'porção'})", style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                            ],
+                          ),
                         ),
-                      ),
-                      Text('${item['calorias']} kcal', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textDark)),
-                    ],
+                        Text('${item['calorias']} kcal', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textDark)),
+                      ],
+                    ),
                   ),
                 );
               },
