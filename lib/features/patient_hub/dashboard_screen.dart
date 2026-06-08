@@ -18,7 +18,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
   }
 
-  // ⚖️ FUNÇÃO PREMIUM: Registra o peso atual em uma linha do tempo histórica no Firebase
   void _abrirDialogoRegistrarPeso(BuildContext context) {
     final txtController = TextEditingController();
     showDialog(
@@ -48,7 +47,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   final agora = DateTime.now();
                   final dataKey = _getTodayDateKey();
                   
-                  // Salva na linha do tempo de pesagens do usuário
                   await FirebaseFirestore.instance
                       .collection('usuarios')
                       .doc(_userId)
@@ -154,37 +152,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 
                 const SizedBox(height: 24),
 
-                // ⚖️ NOVO CARD: Controle de Peso na Tela Inicial do App
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: Colors.grey.shade100),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                // ⚖️ CARD DE PESO CORRIGIDO: Agora escuta e exibe o último peso real na tela!
+                StreamBuilder<QuerySnapshot>(
+                  stream: FirebaseFirestore.instance
+                      .collection('usuarios')
+                      .doc(_userId)
+                      .collection('historico_peso')
+                      .orderBy('timestamp', descending: true)
+                      .limit(1)
+                      .snapshots(),
+                  builder: (context, pesoSnapshot) {
+                    String pesoTexto = "Nenhum registro";
+                    if (pesoSnapshot.hasData && pesoSnapshot.data!.docs.isNotEmpty) {
+                      final ultimoDoc = pesoSnapshot.data!.docs.first.data() as Map<String, dynamic>;
+                      pesoTexto = "${ultimoDoc['peso']} kg";
+                    }
+
+                    return Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        border: Border.all(color: Colors.grey.shade100),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                          const SizedBox(height: 4),
-                          Text('Mantenha seu histórico atualizado', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                              const SizedBox(height: 4),
+                              Text('Último registro: $pesoTexto', style: const TextStyle(fontSize: 13, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () => _abrirDialogoRegistrarPeso(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primarySage.withOpacity(0.1),
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            icon: const Icon(Icons.scale_rounded, color: AppColors.primarySage, size: 18),
+                            label: const Text('Pesar', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                          ),
                         ],
                       ),
-                      ElevatedButton.icon(
-                        onPressed: () => _abrirDialogoRegistrarPeso(context),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primarySage.withOpacity(0.1),
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        icon: const Icon(Icons.scale_rounded, color: AppColors.primarySage, size: 18),
-                        label: const Text('Pesar', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
               ],
@@ -259,6 +274,7 @@ class _ConstruirCardCaloriasPremium extends StatelessWidget {
           const Divider(height: 1),
           const SizedBox(height: 20),
           Row(
+            mainAxisAlignment: Main---------width: double.infinity,
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _barraMacro('Carbos', carbos, 200, AppColors.secondaryMenta),
