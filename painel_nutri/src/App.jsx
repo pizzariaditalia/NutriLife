@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, updateDoc, query, orderBy, limit } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc, query, orderBy, limit, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 
 export default function App() {
@@ -10,9 +10,17 @@ export default function App() {
   const [dadosConquistas, setDadosConquistas] = useState(null);
   const [historicoPesoReal, setHistoricoPesoReal] = useState([]);
 
+  // Estados das Metas Numéricas
   const [novaMetaCalorias, setNovaMetaCalorias] = useState(2000);
   const [novaMetaAgua, setNovaMetaAgua] = useState(2500);
   const [salvandoMeta, setSalvandoMeta] = useState(false);
+
+  // 🍎 ESTADOS PREMIUM: Prescrição do Plano Alimentar (Fica salvo no perfil do paciente)
+  const [planoCafe, setPlanoCafe] = useState("");
+  const [planoAlmoco, setPlanoAlmoco] = useState("");
+  const [planoLanche, setPlanoLanche] = useState("");
+  const [planoJantar, setPlanoJantar] = useState("");
+  const [salvandoPlano, setSalvandoPlano] = useState(false);
 
   const dataHoje = new Date().toISOString().split('T')[0];
 
@@ -24,15 +32,26 @@ export default function App() {
     });
   }, []);
 
-  // 📡 ESCUTADOR 2: Dados do paciente selecionado (Diário, Conquistas e Histórico de Peso Real)
+  // 📡 ESCUTADOR 2: Prontuário, Diário, Conquistas e Plano Alimentar do Paciente
   useEffect(() => {
     if (!pacienteSelecionado) {
       setDadosDiario(null);
       setDadosConquistas(null);
       setHistoricoPesoReal([]);
+      setPlanoCafe(""); setPlanoAlmoco(""); setPlanoLanche(""); setPlanoJantar("");
       return;
     }
 
+    // Carrega o Plano Alimentar Prescrito (Fixo no cadastro do usuário)
+    if (pacienteSelecionado.plano_alimentar) {
+      const p = pacienteSelecionado.plano_alimentar;
+      setPlanoCafe(p.cafe || "");
+      setPlanoAlmoco(p.almoco || "");
+      setPlanoLanche(p.lanche || "");
+      setPlanoJantar(p.jantar || "");
+    }
+
+    // Escuta consumo de hoje
     const unsubDiario = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), (snapshot) => {
       if (snapshot.exists()) {
         const dados = snapshot.data();
@@ -44,21 +63,21 @@ export default function App() {
       }
     });
 
+    // Escuta conquistas de hoje
     const unsubConquistas = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'conquistas', dataHoje), (snapshot) => {
       setDadosConquistas(snapshot.exists() ? snapshot.data() : {});
     });
 
-    // 🔥 BUSCA HISTÓRICO DE PESO REAL: Pega os últimos 5 pesos registrados no celular ordenados por data
-    const pesosRef = collection(db, 'usuarios', pacienteSelecionado.id, 'historico_peso');
-    const q = query(pesosRef, orderBy('timestamp', 'asc'), limit(5));
+    // Escuta histórico de peso
+    const q = query(collection(db, 'usuarios', pacienteSelecionado.id, 'historico_peso'), orderBy('timestamp', 'asc'), limit(5));
     const unsubPesos = onSnapshot(q, (snapshot) => {
-      const listaPesos = snapshot.docs.map(doc => doc.data());
-      setHistoricoPesoReal(listaPesos);
+      setHistoricoPesoReal(snapshot.docs.map(doc => doc.data()));
     });
 
     return () => { unsubDiario(); unsubConquistas(); unsubPesos(); };
   }, [pacienteSelecionado]);
 
+  // 🔥 GRAVAÇÃO 1: Atualiza metas numéricas do dia
   const atualizarMetas = async (e) => {
     e.preventDefault();
     if (!pacienteSelecionado) return;
@@ -68,25 +87,40 @@ export default function App() {
         meta_calorias: Number(novaMetaCalorias),
         meta_agua: Number(novaMetaAgua)
       });
-      alert("🎯 Metas enviadas com sucesso para o celular do paciente!");
-    } catch (erro) {
-      alert("Erro ao salvar metas.");
-    } finally { setSalvandoMeta(false); }
+      alert("🎯 Metas numéricas atualizadas!");
+    } catch (e) { alert("Erro ao salvar metas."); }
+    finally { setSalvandoMeta(false); }
   };
 
-  // 📐 Algoritmo de desenho de coordenadas para o Gráfico SVG Premium Dinâmico
+  // 🔥 GRAVAÇÃO 2: Salva o Plano Alimentar Definitivo no Firebase
+  const salvarPlanoAlimentar = async () => {
+    if (!pacienteSelecionado) return;
+    setSalvandoPlano(true);
+    try {
+      await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), {
+        plano_alimentar: {
+          cafe: planoCafe,
+          almoco: planoAlmoco,
+          lanche: planoLanche,
+          jantar: planoJantar
+        }
+      });
+      alert("🍏 Plano Alimentar salvo! Disponível no smartphone do paciente.");
+    } catch (e) { alert("Erro ao salvar plano alimentar."); }
+    finally { setSalvandoPlano(false); }
+  };
+
   const construirCaminhoSVG = () => {
     if (historicoPesoReal.length < 2) return "";
-    const larguraTotal = 500;
-    const alturaTotal = 100;
-    const pesos = historicoPesoReal.map(h => h.peso);
-    const minPeso = Math.min(...pesos) - 2;
-    const maxPeso = Math.max(...pesos) + 2;
+    const larguraTotal = 500; const alturaTotal = 100;
+    const pesos = historicoPesoReal.map(h => h.weight || h.peso);
+    const minPeso = Math.min(...pesos) - 2; const maxPeso = Math.max(...pesos) + 2;
     const deltaPeso = maxPeso - minPeso === 0 ? 1 : maxPeso - minPeso;
 
     return historicoPesoReal.map((h, index) => {
+      const pAtual = h.weight || h.peso;
       const x = (index / (historicoPesoReal.length - 1)) * larguraTotal;
-      const y = alturaTotal - ((h.peso - minPeso) / deltaPeso) * alturaTotal;
+      const y = alturaTotal - ((pAtual - minPeso) / deltaPeso) * alturaTotal;
       return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
     }).join(' ');
   };
@@ -105,7 +139,7 @@ export default function App() {
             </button>
           </nav>
         </div>
-        <div class="border-t border-white/10 pt-4 text-xs text-white/60">Painel Clínico v1.8</div>
+        <div class="border-t border-white/10 pt-4 text-xs text-white/60">Painel Clínico v2.0</div>
       </aside>
 
       <main class="flex-1 overflow-y-auto p-8 lg:p-12">
@@ -128,7 +162,7 @@ export default function App() {
                   {carregando ? (
                     <tr><td colspan="3" class="p-8 text-center text-gray-400">Buscando na nuvem...</td></tr>
                   ) : pacientes.length === 0 ? (
-                    <tr><td colspan="3" class="p-8 text-center text-gray-400">Nenhum paciente ativo no ecossistema.</td></tr>
+                    <tr><td colspan="3" class="p-8 text-center text-gray-400">Nenhum paciente cadastrado.</td></tr>
                   ) : pacientes.map((p) => (
                     <tr key={p.id} class="hover:bg-gray-50/50 transition">
                       <td class="p-4 pl-6">
@@ -151,13 +185,13 @@ export default function App() {
           <div>
             <button onClick={() => setPacienteSelecionado(null)} class="text-sm font-bold text-[#3B4D43] hover:underline mb-4 block">← Voltar para a lista</button>
             <header class="mb-8">
-              <span class="text-xs font-bold uppercase text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">Prontuário Aberto</span>
+              <span class="text-xs font-bold uppercase text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-md">Prontuário Premium</span>
               <h2 class="text-3xl font-bold mt-2">{pacienteSelecionado.nome || "Usuário de Teste"}</h2>
-              <p class="text-gray-500 text-sm">{pacienteSelecionado.email}</p>
             </header>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div class="lg:col-span-2 space-y-6">
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
+              {/* COLUNA DA ESQUERDA: GRÁFICOS E DIÁRIO DE HOJE */}
+              <div class="xl:col-span-2 space-y-6">
                 <div class="bg-white p-6 rounded-2xl border border-gray-100 grid grid-cols-2 gap-4">
                   <div>
                     <span class="text-xs text-gray-400 font-bold uppercase">Calorias Ingeridas</span>
@@ -169,14 +203,11 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* 📈 GRÁFICO DINÂMICO REAL CONECTADO AO SMARTPHONE */}
                 <div class="bg-white p-6 rounded-2xl border border-gray-100">
-                  <h3 class="font-bold text-lg text-[#3B4D43] mb-2">Evolução do Peso Corporal (Tempo Real)</h3>
-                  <p class="text-xs text-gray-400 mb-6">Linha gerada automaticamente a partir das pesagens salvas pelo paciente no aplicativo.</p>
-                  
-                  <div class="relative w-full h-48 bg-gray-50/50 rounded-xl p-4 flex flex-col justify-between border border-gray-100">
+                  <h3 class="font-bold text-lg text-[#3B4D43] mb-2">Evolução de Peso Corporal</h3>
+                  <div class="relative w-full h-36 bg-gray-50/50 rounded-xl p-4 flex flex-col justify-between border border-gray-100">
                     {historicoPesoReal.length < 2 ? (
-                      <div class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">Aguardando mais registros de peso no celular para traçar a linha.</div>
+                      <div class="absolute inset-0 flex items-center justify-center text-sm text-gray-400">Aguardando registros de peso no app...</div>
                     ) : (
                       <>
                         <svg class="absolute inset-0 w-full h-full p-8" viewBox="0 0 500 100" preserveAspectRatio="none">
@@ -185,7 +216,7 @@ export default function App() {
                         <div class="flex justify-between text-[11px] text-gray-400 font-bold mt-auto pt-4 z-10">
                           {historicoPesoReal.map((h, i) => (
                             <div key={i} class="text-center">
-                              <p class="text-[#3B4D43] font-extrabold">{h.peso}kg</p>
+                              <p class="text-[#3B4D43] font-extrabold">{h.peso || h.weight}kg</p>
                               <p class="mt-1 font-medium text-gray-400">{h.mes}</p>
                             </div>
                           ))}
@@ -195,49 +226,53 @@ export default function App() {
                   </div>
                 </div>
 
-                <div class="bg-white p-6 rounded-2xl border border-gray-100">
-                  <h3 class="font-bold text-lg text-[#3B4D43] mb-1">Vitórias Comportamentais de Hoje</h3>
-                  <div class="grid grid-cols-2 gap-3 mt-4">
-                    <div class={`p-3 rounded-xl border flex items-center gap-3 text-sm font-semibold transition ${dadosConquistas?.energia_alta ? 'bg-amber-50/50 border-amber-200 text-amber-800' : 'bg-gray-50/50 border-gray-100 text-gray-400'}`}><span>⚡</span> Energia Constante</div>
-                    <div class={`p-3 rounded-xl border flex items-center gap-3 text-sm font-semibold transition ${dadosConquistas?.sono_reparador ? 'bg-indigo-50/50 border-indigo-200 text-indigo-800' : 'bg-gray-50/50 border-gray-100 text-gray-400'}`}><span>🌙</span> Sono Reparador</div>
-                    <div class={`p-3 rounded-xl border flex items-center gap-3 text-sm font-semibold transition ${dadosConquistas?.roupa_solta ? 'bg-rose-50/50 border-rose-200 text-rose-800' : 'bg-gray-50/50 border-gray-100 text-gray-400'}`}><span>👕</span> Roupas Largas</div>
-                    <div class={`p-3 rounded-xl border flex items-center gap-3 text-sm font-semibold transition ${dadosConquistas?.controle_doce ? 'bg-orange-50/50 border-orange-200 text-orange-800' : 'bg-gray-50/50 border-gray-100 text-gray-400'}`}><span>🍩</span> Controle de Doces</div>
-                  </div>
-                </div>
-
-                <div class="bg-white rounded-2xl border border-gray-100 p-6">
-                  <h3 class="font-bold text-lg mb-4 text-[#3B4D43]">Alimentos Ingeridos Hoje</h3>
-                  {!dadosDiario?.historico_alimentos || dadosDiario.historico_alimentos.length === 0 ? (
-                    <p class="text-gray-400 text-sm text-center py-6">Nenhum registro alimentar lançado hoje.</p>
-                  ) : (
-                    <div class="divide-y divide-gray-100">
-                      {dadosDiario.historico_alimentos.map((alimento, i) => (
-                        <div key={i} class="py-3 flex justify-between items-center text-sm">
-                          <div>
-                            <p class="font-semibold text-gray-950">{alimento.nome}</p>
-                            <p class="text-xs text-gray-400">Turno: {alimento.turno} • Qtd: {alimento.quantidade}x</p>
-                          </div>
-                          <span class="font-bold text-[#3B4D43]">{alimento.calorias} kcal</span>
-                        </div>
-                      ))}
+                {/* 🍏 NOVO PAINEL DE PRESCRIÇÃO DE CARDÁPIO (DIETBOX STYLE) */}
+                <div class="bg-white p-6 rounded-2xl border border-gray-100 space-y-4">
+                  <div class="flex justify-between items-center">
+                    <div>
+                      <h3 class="font-bold text-lg text-[#3B4D43]">Prescrever Plano Alimentar Definitivo</h3>
+                      <p class="text-xs text-gray-400">O que você digitar aqui aparecerá estruturado no diário do paciente.</p>
                     </div>
-                  )}
+                    <button onClick={salvarPlanoAlimentar} disabled={salvandoPlano} class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition">
+                      {salvandoPlano ? "Salvando..." : "💾 Salvar Cardápio"}
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-gray-500 mb-1">☕ Café da Manhã</label>
+                      <textarea value={planoCafe} onChange={(e) => setPlanoCafe(e.target.value)} placeholder="Ex: 2 ovos mexidos + 1 fatia de pão integral com creme de ricota..." class="w-full h-24 bg-[#F9F6F0] border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43] resize-none" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-gray-500 mb-1">☀️ Almoço</label>
+                      <textarea value={planoAlmoco} onChange={(e) => setPlanoAlmoco(e.target.value)} placeholder="Ex: 150g de frango + 100g de arroz integral + salada à vontade..." class="w-full h-24 bg-[#F9F6F0] border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43] resize-none" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-gray-500 mb-1">🍌 Lanche da Tarde</label>
+                      <textarea value={planoLanche} onChange={(e) => setPlanoLanche(e.target.value)} placeholder="Ex: 1 banana com 15g de aveia + 30g de Whey Protein..." class="w-full h-24 bg-[#F9F6F0] border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43] resize-none" />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-bold uppercase text-gray-500 mb-1">🌙 Jantar</label>
+                      <textarea value={planoJantar} onChange={(e) => setPlanoJantar(e.target.value)} placeholder="Ex: Omelete de 3 ovos com espinafre + 100g de batata doce..." class="w-full h-24 bg-[#F9F6F0] border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43] resize-none" />
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* SEÇÃO DA DIREITA (METAS NUMÉRICAS) */}
               <div class="bg-white p-6 rounded-2xl border border-gray-100 h-fit">
-                <h3 class="font-bold text-lg text-[#3B4D43] mb-1">Ajustar Metas Clínicas</h3>
+                <h3 class="font-bold text-lg text-[#3B4D43] mb-1">Metas Clínicas Rápidas</h3>
                 <form onSubmit={atualizarMetas} class="space-y-4 mt-4">
                   <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Meta Calórica (kcal)</label>
-                    <input type="number" value={novaMetaCalorias} onChange={(e) => setNovaMetaCalorias(e.target.value)} class="w-full bg-[#F9F6F0] border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-[#3B4D43]" required />
+                    <input type="number" value={novaMetaCalorias} onChange={(e) => setNovaMetaCalorias(e.target.value)} class="w-full bg-[#F9F6F0] border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-[#3B4D43]" required />
                   </div>
                   <div>
                     <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Meta de Hidratação (ml)</label>
-                    <input type="number" value={novaMetaAgua} onChange={(e) => setNovaMetaAgua(e.target.value)} class="w-full bg-[#F9F6F0] border border-gray-200 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-[#3B4D43]" required />
+                    <input type="number" value={novaMetaAgua} onChange={(e) => setNovaMetaAgua(e.target.value)} class="w-full bg-[#F9F6F0] border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-[#3B4D43]" required />
                   </div>
-                  <button type="submit" disabled={salvandoMeta} class="w-full bg-[#3B4D43] text-white py-3 rounded-xl font-bold text-sm shadow-sm hover:bg-[#2C3E35] transition disabled:opacity-50">
-                    {salvandoMeta ? "Enviando..." : "Atualizar no Smartphone"}
+                  <button type="submit" disabled={salvandoMeta} class="w-full bg-[#3B4D43] text-white py-3 rounded-xl font-bold text-sm shadow-sm hover:bg-[#2C3E35] transition">
+                    {salvandoMeta ? "Enviando..." : "Atualizar Metas Diárias"}
                   </button>
                 </form>
               </div>
