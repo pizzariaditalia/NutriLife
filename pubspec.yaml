@@ -1,0 +1,22 @@
+name: nutri_life
+description: Aplicativo Nutri Life
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.1.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Nossos bancos de dados
+  firebase_core: any
+  cloud_firestore: any
+  cupertino_icons: ^1.0.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
