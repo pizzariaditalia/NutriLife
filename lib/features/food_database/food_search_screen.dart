@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
+import 'barcode_scanner_screen.dart'; // IMPORTAÇÃO DO NOVO LEITOR
 
-// Modelo de dados Premium com suporte completo a Macronutrientes (Padrão TACO/IBGE)
 class Alimento {
   final String nome;
   final String porcaoBase;
@@ -29,7 +29,7 @@ class Alimento {
 }
 
 class FoodSearchScreen extends StatefulWidget {
-  final String turno; // Permite saber se veio do Café, Almoço, Jantar, etc.
+  final String turno;
   const FoodSearchScreen({Key? key, this.turno = 'Lanche'}) : super(key: key);
 
   @override
@@ -39,76 +39,18 @@ class FoodSearchScreen extends StatefulWidget {
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   
-  // 💎 BANCO DE DADOS EXPANDIDO PREMIUM (Valores reais baseados na Tabela TACO brasileira)
   final List<Alimento> _bancoDeAlimentos = [
-    Alimento(
-      nome: 'Arroz Branco Cozido',
-      porcaoBase: '100g',
-      calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2,
-      medidasCaseiras: ['1 Colher de sopa cheia (25g)', '1 Escumadeira média (100g)'],
-    ),
-    Alimento(
-      nome: 'Feijão Carioca Cozido',
-      porcaoBase: '100g',
-      calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5,
-      medidasCaseiras: ['1 Concha média cheia (100g)', '1 Colher de sopa (20g)'],
-    ),
-    Alimento(
-      nome: 'Peito de Frango Grelhado',
-      porcaoBase: '100g',
-      calorias: 165, carbos: 0.0, proteinas: 31.5, gorduras: 3.6,
-      medidasCaseiras: ['1 Filé médio (100g)', '1 Filé grande (150g)', '1 Pedaço pequeno (50g)'],
-    ),
-    Alimento(
-      nome: 'Ovo Cozido',
-      porcaoBase: '1 Unidade (50g)',
-      calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3,
-      medidasCaseiras: ['1 Unidade inteira', '2 Unidades inteiras'],
-    ),
-    Alimento(
-      nome: 'Pão Francês',
-      porcaoBase: '1 Unidade (50g)',
-      calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5,
-      medidasCaseiras: ['1 Unidade inteira', 'Metade do pão'],
-    ),
-    Alimento(
-      nome: 'Banana Prata',
-      porcaoBase: '1 Unidade (100g)',
-      calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3,
-      medidasCaseiras: ['1 Unidade média', '2 Unidades pequenas'],
-    ),
-    Alimento(
-      nome: 'Aveia em Flocos',
-      porcaoBase: '30g',
-      calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2,
-      medidasCaseiras: ['1 Colher de sopa cheia (15g)', '2 Colher de sopa cheia (30g)'],
-    ),
-    Alimento(
-      nome: 'Whey Protein (Concentrado)',
-      porcaoBase: '30g',
-      calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0,
-      medidasCaseiras: ['1 Dosador cheio (30g)'],
-    ),
-    Alimento(
-      nome: 'Pasta de Amendoim',
-      porcaoBase: '15g',
-      calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4,
-      medidasCaseiras: ['1 Colher de chá cheia (7g)', '1 Colher de sopa cheia (15g)'],
-    ),
-    Alimento(
-      nome: 'Azeite de Oliva Extra Virgem',
-      porcaoBase: '13ml',
-      calorias: 119, carbos: 0.0, proteinas: 0.0, gorduras: 13.0,
-      medidasCaseiras: ['1 Colher de sopa (13ml)', '1 Colher de chá (5ml)'],
-    ),
-    Alimento(
-      nome: 'Biscoito Recheado de Chocolate',
-      porcaoBase: '30g',
-      calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0,
-      isProcessado: true,
-      alertaProcessado: 'Alto teor de açúcar refinado e gordura hidrogenada.',
-      medidasCaseiras: ['3 Unidades (30g)', '1 Pacote inteiro'],
-    ),
+    Alimento(nome: 'Arroz Branco Cozido', porcaoBase: '100g', calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2, medidasCaseiras: ['1 Colher de sopa cheia (25g)', '1 Escumadeira média (100g)']),
+    Alimento(nome: 'Feijão Carioca Cozido', porcaoBase: '100g', calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5, medidasCaseiras: ['1 Concha média cheia (100g)', '1 Colher de sopa (20g)']),
+    Alimento(nome: 'Peito de Frango Grelhado', porcaoBase: '100g', calorias: 165, carbos: 0.0, proteinas: 31.5, gorduras: 3.6, medidasCaseiras: ['1 Filé médio (100g)', '1 Filé grande (150g)']),
+    Alimento(nome: 'Ovo Cozido', porcaoBase: '1 Unidade (50g)', calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3, medidasCaseiras: ['1 Unidade inteira', '2 Unidades inteiras']),
+    Alimento(nome: 'Pão Francês', porcaoBase: '1 Unidade (50g)', calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5, medidasCaseiras: ['1 Unidade inteira']),
+    Alimento(nome: 'Banana Prata', porcaoBase: '1 Unidade (100g)', calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3, medidasCaseiras: ['1 Unidade média']),
+    Alimento(nome: 'Aveia em Flocos', porcaoBase: '30g', calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2, medidasCaseiras: ['1 Colher de sopa cheia (15g)']),
+    Alimento(nome: 'Whey Protein (Concentrado)', porcaoBase: '30g', calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0, medidasCaseiras: ['1 Dosador cheio (30g)']),
+    Alimento(nome: 'Pasta de Amendoim', porcaoBase: '15g', calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4, medidasCaseiras: ['1 Colher de sopa cheia (15g)']),
+    Alimento(nome: 'Azeite de Oliva Extra Virgem', porcaoBase: '13ml', calorias: 119, carbos: 0.0, proteinas: 0.0, gorduras: 13.0, medidasCaseiras: ['1 Colher de sopa (13ml)']),
+    Alimento(nome: 'Biscoito Recheado de Chocolate', porcaoBase: '30g', calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0, isProcessado: true, alertaProcessado: 'Alto teor de açúcar refinado e gordura hidrogenada.', medidasCaseiras: ['3 Unidades (30g)']),
   ];
 
   List<Alimento> _resultados = [];
@@ -124,10 +66,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       if (query.isEmpty) {
         _resultados = _bancoDeAlimentos;
       } else {
-        _resultados = _bancoDeAlimentos
-            .where((alimento) =>
-                alimento.nome.toLowerCase().contains(query.toLowerCase()))
-            .toList();
+        _resultados = _bancoDeAlimentos.where((a) => a.nome.toLowerCase().contains(query.toLowerCase())).toList();
       }
     });
   }
@@ -155,45 +94,53 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
           Container(
             color: AppColors.primarySage,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filtrarAlimentos,
-              style: const TextStyle(color: AppColors.textDark),
-              decoration: InputDecoration(
-                hintText: 'Buscar alimento (TACO/IBGE)...',
-                hintStyle: TextStyle(color: Colors.grey.shade600),
-                prefixIcon: const Icon(Icons.search, color: AppColors.primarySage),
-                suffixIcon: IconButton(
-                  icon: const Icon(Icons.clear, color: Colors.grey),
-                  onPressed: () {
-                    _searchController.clear();
-                    _filtrarAlimentos('');
-                  },
+            child: Row(
+              children: [
+                // CAMPO DE PESQUISA POR TEXTO
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _filtrarAlimentos,
+                    style: const TextStyle(color: AppColors.textDark),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar alimento...',
+                      hintStyle: TextStyle(color: Colors.grey.shade600),
+                      prefixIcon: const Icon(Icons.search, color: AppColors.primarySage),
+                      filled: true,
+                      fillColor: AppColors.backgroundCreme,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
                 ),
-                filled: true,
-                fillColor: AppColors.backgroundCreme,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+                const SizedBox(width: 10),
+                
+                // ⚡ NOVO BOTÃO ULTRA-PREMIUM: ATALHO PARA O LEITOR DE CÓDIGO DE BARRAS
+                Container(
+                  decoration: BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.circular(12)),
+                  child: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primarySage),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BarcodeScannerScreen(turno: widget.turno),
+                        ),
+                      );
+                    },
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           Expanded(
             child: _resultados.isEmpty
-                ? const Center(
-                    child: Text('Nenhum alimento encontrado na base.',
-                        style: TextStyle(color: Colors.grey, fontSize: 16)),
-                  )
+                ? const Center(child: Text('Nenhum alimento encontrado na base.', style: TextStyle(color: Colors.grey, fontSize: 16)))
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _resultados.length,
                     itemBuilder: (context, index) {
                       final alimento = _resultados[index];
-                      return _CardAlimentoPremium(
-                        alimento: alimento,
-                        onTap: () => _abrirSeletorDePorcao(alimento),
-                      );
+                      return _CardAlimentoPremium(alimento: alimento, onTap: () => _abrirSeletorDePorcao(alimento));
                     },
                   ),
           ),
@@ -206,7 +153,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
 class _CardAlimentoPremium extends StatelessWidget {
   final Alimento alimento;
   final VoidCallback onTap;
-
   const _CardAlimentoPremium({required this.alimento, required this.onTap});
 
   @override
@@ -226,12 +172,8 @@ class _CardAlimentoPremium extends StatelessWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Text(alimento.nome,
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                  ),
-                  Text('${alimento.calorias} kcal',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
+                  Expanded(child: Text(alimento.nome, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark))),
+                  Text('${alimento.calorias} kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
                 ],
               ),
               const SizedBox(height: 6),
@@ -250,17 +192,12 @@ class _CardAlimentoPremium extends StatelessWidget {
                 const SizedBox(height: 10),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accentPeach.withOpacity(0.08),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
+                  decoration: BoxDecoration(color: AppColors.accentPeach.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
                   child: Row(
                     children: [
                       const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.accentPeach),
                       const SizedBox(width: 6),
-                      Expanded(
-                          child: Text(alimento.alertaProcessado,
-                              style: const TextStyle(fontSize: 11, color: AppColors.accentPeach, fontWeight: FontWeight.bold))),
+                      Expanded(child: Text(alimento.alertaProcessado, style: const TextStyle(fontSize: 11, color: AppColors.accentPeach, fontWeight: FontWeight.bold))),
                     ],
                   ),
                 ),
@@ -276,7 +213,6 @@ class _CardAlimentoPremium extends StatelessWidget {
 class _ConstruirBottomSheetPorcao extends StatefulWidget {
   final Alimento alimento;
   final String turno;
-
   const _ConstruirBottomSheetPorcao({required this.alimento, required this.turno});
 
   @override
@@ -295,33 +231,24 @@ class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao
     }
   }
 
-  // 🔥 PROCESSAMENTO MATEMÁTICO PREMIUM INTEGRADO DIRETOR COM CLOUD FIRESTORE
   void _salvarNoDiario() async {
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
     final agora = DateTime.now();
     final dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
 
-    // Multiplica os valores nutricionais com base no multiplicador de porções escolhido pelo paciente
     double fator = _quantidade;
     int kcalCalculadas = (widget.alimento.calorias * fator).round();
     double carbosCalculados = widget.alimento.carbos * fator;
     double proteinasCalculadas = widget.alimento.proteinas * fator;
     double gordurasCalculadas = widget.alimento.gorduras * fator;
 
-    final docRef = FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(userId)
-        .collection('diario')
-        .doc(dataHoje);
+    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataHoje);
 
-    // Faz o incremento atômico na nuvem para atualizar os anéis gráficos do Dashboard na hora
     await docRef.set({
       'calorias_consumidas': FieldValue.increment(kcalCalculadas),
       'carbos_consumidos': FieldValue.increment(carbosCalculados),
       'proteinas_consumidos': FieldValue.increment(proteinasCalculadas),
       'gorduras_consumidos': FieldValue.increment(gordurasCalculadas),
-      
-      // Guarda em uma lista estruturada para o Diário de Turnos carregar futuramente
       'historico_alimentos': FieldValue.arrayUnion([
         {
           'nome': widget.alimento.nome,
@@ -337,10 +264,7 @@ class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao
     if (mounted) {
       Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${widget.alimento.nome} somado aos macros do dia!'),
-          backgroundColor: AppColors.primarySage,
-        ),
+        SnackBar(content: Text('${widget.alimento.nome} somado aos macros do dia!'), backgroundColor: AppColors.primarySage),
       );
     }
   }
@@ -349,41 +273,22 @@ class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(
-        color: AppColors.backgroundCreme,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
+      decoration: const BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
       child: SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+          crossAxisAlignment: BoxConstraints.expand == null ? CrossAxisAlignment.stretch : CrossAxisAlignment.stretch,
           children: [
-            Center(
-              child: Container(
-                width: 40, height: 4,
-                margin: const EdgeInsets.only(bottom: 24),
-                decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)),
-              ),
-            ),
-            Text(widget.alimento.nome,
-                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage), textAlign: SystemMouseCursors.click == null ? TextAlign.center : TextAlign.center),
+            Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
+            Text(widget.alimento.nome, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage), textAlign: TextAlign.center),
             const SizedBox(height: 24),
             const Text('Multiplicador de Porção:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                IconButton(
-                  onPressed: () { if (_quantidade > 0.5) { setState(() => _quantidade -= 0.5); } },
-                  icon: const Icon(Icons.remove_circle_outline, size: 32, color: AppColors.primarySage),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(_quantidade.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                ),
-                IconButton(
-                  onPressed: () { setState(() => _quantidade += 0.5); },
-                  icon: const Icon(Icons.add_circle_outline, size: 32, color: AppColors.primarySage),
-                ),
+                IconButton(onPressed: () { if (_quantidade > 0.5) { setState(() => _quantidade -= 0.5); } }, icon: const Icon(Icons.remove_circle_outline, size: 32, color: AppColors.primarySage)),
+                Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(_quantidade.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark))),
+                IconButton(onPressed: () { setState(() => _quantidade += 0.5); }, icon: const Icon(Icons.add_circle_outline, size: 32, color: AppColors.primarySage)),
               ],
             ),
             const SizedBox(height: 16),
@@ -407,11 +312,7 @@ class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao
             const SizedBox(height: 32),
             ElevatedButton(
               onPressed: _salvarNoDiario,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primarySage,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-              ),
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               child: const Text('Adicionar ao Diário', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.backgroundCreme)),
             ),
           ],
