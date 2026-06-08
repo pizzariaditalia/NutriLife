@@ -32,8 +32,8 @@ jobs:
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # Mantemos apenas o ajuste de versão mínima para o Firestore rodar
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
+          # 🟢 AJUSTE CIRÚRGICO: Mudamos de 21 para 23 para o Firebase Auth aceitar!
+          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
