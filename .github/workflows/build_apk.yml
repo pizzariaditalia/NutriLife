@@ -27,7 +27,7 @@ jobs:
           channel: 'stable'
 
       # ==========================================
-      # TRUQUE MÁGICO 2.0: CONFIGURADOR FIREBASE
+      # TRUQUE MÁGICO 2.1: CONFIGURADOR FIREBASE ATUALIZADO
       # ==========================================
       - name: Configurar Motor Android e Firebase
         run: |
@@ -35,19 +35,21 @@ jobs:
           cp -r temp_app/android ./android
           rm -rf temp_app
           
-          # Move a chave do Firebase da raiz para a pasta Android profunda
+          # Move a chave do Firebase da raiz para o cofre do Android
           if [ -f "google-services.json" ]; then
-            echo "✅ Chave do Firebase encontrada! Movendo para o cofre..."
+            echo "✅ Chave do Firebase encontrada! Movendo para o app..."
             mv google-services.json android/app/
           else
             echo "⚠️ AVISO: google-services.json não encontrado na raiz!"
           fi
           
-          # Ajustar a versão mínima exigida pelo banco de dados
+          # Ajustar a versão mínima exigida pelo banco de dados (API 21)
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle
           
-          # Injetar o plugin do Google Services automaticamente no código do Android
-          sed -i 's/id "com.android.application" version "\([^"]*\)" apply false/id "com.android.application" version "\1" apply false\n    id "com.google.gms.google-services" version "4.4.1" apply false/g' android/build.gradle
+          # Injetar o plugin do Google Services no NOVO arquivo do Flutter (settings.gradle)
+          sed -i 's/id "com.android.application" version/id "com.google.gms.google-services" version "4.4.1" apply false\n    id "com.android.application" version/g' android/settings.gradle
+          
+          # Aplicar o plugin dentro do aplicativo
           sed -i 's/id "com.android.application"/id "com.android.application"\n    id "com.google.gms.google-services"/g' android/app/build.gradle
 
       - name: Instalar dependências (pub get)
