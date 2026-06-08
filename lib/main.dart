@@ -2,21 +2,57 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'core/theme/app_colors.dart';
-import 'features/auth/login_screen.dart'; 
+import 'features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔥 FIREBASE REATIVADO OFICIALMENTE!
-  await Firebase.initializeApp();
+  try {
+    // Tenta ligar o Firebase
+    await Firebase.initializeApp();
 
-  // Ativando o Cache offline maravilhoso
-  FirebaseFirestore.instance.settings = const Settings(
-    persistenceEnabled: true,
-    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-  );
+    FirebaseFirestore.instance.settings = const Settings(
+      persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+    );
 
-  runApp(const NutriLifeApp());
+    // Se der tudo certo, roda o app normal
+    runApp(const NutriLifeApp());
+  } catch (erro) {
+    // SE O FIREBASE FALHAR: Captura o erro e mostra na tela!
+    runApp(
+      MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          backgroundColor: Colors.white,
+          body: SafeArea(
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, color: Colors.red, size: 64),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Ocorreu um erro no Firebase:',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      erro.toString(),
+                      style: const TextStyle(color: Colors.red, fontSize: 14),
+                      textAlign: TextAlign.center,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class NutriLifeApp extends StatelessWidget {
@@ -46,12 +82,7 @@ class NutriLifeApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
           ),
         ),
-        textTheme: const TextTheme(
-          bodyLarge: TextStyle(color: AppColors.textDark),
-          bodyMedium: TextStyle(color: AppColors.textDark),
-        ),
       ),
-      // App inicia na Tela de Login para fazermos o cadastro real!
       home: const LoginScreen(),
     );
   }
