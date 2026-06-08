@@ -15,7 +15,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
   late AnimationController _animationController;
   late Animation<double> _laserAnimation;
 
-  // Produtos premium simulados para o teste de leitura de código de barras
   final List<Map<String, dynamic>> _produtosSupermercado = [
     {
       'codigo': '7891000123456',
@@ -43,7 +42,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
   @override
   void initState() {
     super.initState();
-    // Animação da linha laser a subir e a descer no ecrã
     _animationController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
@@ -58,7 +56,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
     super.dispose();
   }
 
-  // 🔥 PROCESSAMENTO ATÓMICO: Insere o produto escaneado diretamente no Firebase
   void _computarProdutoEscaneado(Map<String, dynamic> produto) async {
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
     final agora = DateTime.now();
@@ -88,7 +85,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
     }, SetOptions(merge: true));
 
     if (mounted) {
-      Navigator.pop(context); // Fecha o Scanner
+      Navigator.pop(context);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('✨ ${produto['nome']} lido e adicionado ao ${widget.turno}!'),
@@ -118,8 +115,6 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),
           ),
-          
-          // MOLDURA DO SCANNER PREMIUM
           Center(
             child: Stack(
               children: [
@@ -127,12 +122,11 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
                   width: 260,
                   height: 240,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.white20, width: 2),
+                    border: Border.all(color: Colors.white.withOpacity(0.2), width: 2), // CORRIGIDO
                     borderRadius: BorderRadius.circular(24),
                     color: Colors.white.withOpacity(0.03),
                   ),
                 ),
-                // Linha Laser Animada
                 AnimatedBuilder(
                   animation: _laserAnimation,
                   builder: (context, child) {
@@ -155,16 +149,12 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> with Single
               ],
             ),
           ),
-          
           const SizedBox(height: 40),
-          
-          // BANCO DE PRODUTOS PARA TESTE NO TELEMÓVEL
           const Text(
             'Simular leitura de produtos do mercado:',
-            style: TextStyle(color: Colors.white50, fontSize: 12, fontWeight: FontWeight.bold),
+            style: TextStyle(color: Colors.white54, fontSize: 12, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
-          
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 24),
