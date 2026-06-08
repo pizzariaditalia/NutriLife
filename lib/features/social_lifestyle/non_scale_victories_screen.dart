@@ -1,28 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
-
-// Modelo de dados para as conquistas
-class Conquista {
-  final String id;
-  final String titulo;
-  final String descricao;
-  final IconData icone;
-  final int progressoAtual;
-  final int meta;
-  final bool desbloqueada;
-
-  Conquista({
-    required this.id,
-    required this.titulo,
-    required this.descricao,
-    required this.icone,
-    required this.progressoAtual,
-    required this.meta,
-    required this.desbloqueada,
-  });
-
-  double get porcentagem => progressoAtual / meta;
-}
 
 class NonScaleVictoriesScreen extends StatefulWidget {
   const NonScaleVictoriesScreen({Key? key}) : super(key: key);
@@ -32,217 +11,201 @@ class NonScaleVictoriesScreen extends StatefulWidget {
 }
 
 class _NonScaleVictoriesScreenState extends State<NonScaleVictoriesScreen> {
-  // Simulação do banco de dados de conquistas do paciente
-  final List<Conquista> _conquistas = [
-    Conquista(
-      id: '1',
-      titulo: 'Relógio Biológico',
-      descricao: 'Dormiu 7+ horas por 5 dias seguidos.',
-      icone: Icons.nights_stay_rounded,
-      progressoAtual: 5,
-      meta: 5,
-      desbloqueada: true,
-    ),
-    Conquista(
-      id: '2',
-      titulo: 'Trânsito Livre',
-      descricao: 'Melhorou o funcionamento intestinal.',
-      icone: Icons.spa_rounded,
-      progressoAtual: 1,
-      meta: 1,
-      desbloqueada: true,
-    ),
-    Conquista(
-      id: '3',
-      titulo: 'Constância de Ouro',
-      descricao: 'Registrou todas as refeições por 7 dias.',
-      icone: Icons.emoji_events_rounded,
-      progressoAtual: 4,
-      meta: 7,
-      desbloqueada: false,
-    ),
-    Conquista(
-      id: '4',
-      titulo: 'Oásis de Hidratação',
-      descricao: 'Atingiu a meta de água por 10 dias.',
-      icone: Icons.water_drop_rounded,
-      progressoAtual: 8,
-      meta: 10,
-      desbloqueada: false,
-    ),
-    Conquista(
-      id: '5',
-      titulo: 'Mestre Zen',
-      descricao: 'Controlou a fome emocional no nível 5.',
-      icone: Icons.self_improvement_rounded,
-      progressoAtual: 0,
-      meta: 3,
-      desbloqueada: false,
-    ),
+  final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+
+  // Chave de data para salvar as conquistas com base no dia de hoje
+  String _getTodayDateKey() {
+    final agora = DateTime.now();
+    return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
+  }
+
+  // Lista mestre de conquistas premium monitoradas pela plataforma
+  final List<Map<String, dynamic>> _conquistasMestre = [
+    {
+      'id': 'energia_alta',
+      'titulo': 'Energia Constante',
+      'descricao': 'Sem aquele cansaço ou sono forte após o almoço.',
+      'icone': Icons.bolt_rounded,
+      'cor': Colors.amber,
+    },
+    {
+      'id': 'sono_reparador',
+      'titulo': 'Sono de Qualidade',
+      'descricao': 'Dormiu rápido e acordou com a sensação de descanso.',
+      'icone': Icons.hotel_rounded,
+      'cor': Colors.indigo,
+    },
+    {
+      'id': 'roupa_solta',
+      'titulo': 'Roupas Mais Largar',
+      'descricao': 'Sentiu aquela calça ou camisa vestindo de forma mais confortável.',
+      'icone': Icons.checkroom_rounded,
+      'cor': AppColors.accentPeach,
+    },
+    {
+      'id': 'foco_afiado',
+      'titulo': 'Foco e Clareza Mental',
+      'descricao': 'Maior produtividade e menos névoa mental ao longo do dia.',
+      'icone': Icons.psychology_rounded,
+      'cor': Colors.purple,
+    },
+    {
+      'id': 'digestao_nota_10',
+      'titulo': 'Intestino Regulado',
+      'descricao': 'Digestão leve, sem estufamento ou desconforto gástrico.',
+      'icone': Icons.health_and_safety_rounded,
+      'cor': AppColors.secondaryMenta,
+    },
+    {
+      'id': 'controle_doce',
+      'titulo': 'Domou o Açúcar',
+      'descricao': 'Passou o dia sem aquela vontade incontrolável de comer doces.',
+      'icone': Icons.cookie_rounded,
+      'cor': Colors.orange,
+    },
   ];
+
+  // 🔥 Atualiza o estado da conquista diretamente no Cloud Firestore
+  void _alternarConquista(String idConquista, bool statusAtual, String dataKey) async {
+    final docRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(_userId)
+        .collection('conquistas')
+        .doc(dataKey);
+
+    await docRef.set({
+      idConquista: !statusAtual, // Inverte o estado booleano
+    }, SetOptions(merge: true));
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Calculando o progresso geral
-    int conquistasDesbloqueadas = _conquistas.where((c) => c.desbloqueada).length;
-    int totalConquistas = _conquistas.length;
+    final dataKey = _getTodayDateKey();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Além da Balança'),
+        title: const Text('Minhas Conquistas'),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
       ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Cabeçalho de Gamificação
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: AppColors.primarySage,
-                borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-              ),
-              child: Column(
-                children: [
-                  const Icon(
-                    Icons.workspace_premium_rounded,
-                    size: 64,
-                    color: AppColors.secondaryMenta,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Suas Vitórias Diárias',
-                    style: TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Você já desbloqueou $conquistasDesbloqueadas de $totalConquistas conquistas!',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            
-            const SizedBox(height: 16),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(_userId)
+            .collection('conquistas')
+            .doc(dataKey)
+            .snapshots(),
+        builder: (context, snapshot) {
+          Map<String, dynamic> conquistasSalvas = {};
 
-            // Texto Motivacional
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 8.0),
-              child: Text(
-                'Lembre-se: O peso na balança é apenas um número. A verdadeira mudança acontece nos seus hábitos!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontStyle: FontStyle.italic,
-                  color: AppColors.textDark,
-                ),
-              ),
-            ),
-            
-            // Grid de Conquistas (Badges)
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.all(16),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 0.85,
-                ),
-                itemCount: _conquistas.length,
-                itemBuilder: (context, index) {
-                  return _buildCardConquista(_conquistas[index]);
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+          if (snapshot.hasData && snapshot.data!.exists) {
+            conquistasSalvas = snapshot.data!.data() as Map<String, dynamic>;
+          }
 
-  Widget _buildCardConquista(Conquista conquista) {
-    return Container(
-      decoration: BoxDecoration(
-        color: conquista.desbloqueada ? Colors.white : Colors.grey.shade100,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: conquista.desbloqueada ? AppColors.secondaryMenta : Colors.grey.shade300,
-          width: conquista.desbloqueada ? 2 : 1,
-        ),
-        boxShadow: conquista.desbloqueada
-            ? [
-                BoxShadow(
-                  color: AppColors.secondaryMenta.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                )
-              ]
-            : [],
-      ),
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Stack(
-            alignment: Alignment.center,
+          // Calcula a porcentagem de conquistas batidas hoje para a barra de progresso
+          int totalBatido = conquistasSalvas.values.where((v) => v == true).length;
+          double progressoDiario = _conquistasMestre.isEmpty ? 0 : totalBatido / _conquistasMestre.length;
+
+          return Column(
             children: [
-              if (!conquista.desbloqueada)
-                SizedBox(
-                  width: 50,
-                  height: 50,
-                  child: CircularProgressIndicator(
-                    value: conquista.porcentagem,
-                    backgroundColor: Colors.grey.shade300,
-                    color: AppColors.accentPeach,
-                    strokeWidth: 4,
+              // 1. HEADER EMOCIONAL E PROGRESSO
+              Container(
+                color: AppColors.primarySage,
+                width: double.infinity,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      const Text(
+                        'Evolução Além do Peso 🌿',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Marque as vitórias que você sentiu no seu corpo hoje.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                      const SizedBox(height: 16),
+                      LinearProgressIndicator(
+                        value: progressoDiario,
+                        backgroundColor: Colors.grey.shade200,
+                        color: AppColors.secondaryMenta,
+                        minHeight: 10,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '$totalBatido de ${_conquistasMestre.length} conquistados hoje!',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primarySage),
+                      ),
+                    ],
                   ),
                 ),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: conquista.desbloqueada
-                      ? AppColors.secondaryMenta.withOpacity(0.2)
-                      : Colors.transparent,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  conquista.desbloqueada ? conquista.icone : Icons.lock_rounded,
-                  size: 32,
-                  color: conquista.desbloqueada ? AppColors.primarySage : Colors.grey.shade500,
+              ),
+
+              // 2. GRADE DE CARDS DAS VITÓRIAS
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: _conquistasMestre.length,
+                  itemBuilder: (context, index) {
+                    final item = _conquistasMestre[index];
+                    final String id = item['id'];
+                    final bool isConquistado = conquistasSalvas[id] ?? false;
+
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 250),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: isConquistado ? AppColors.primarySage.withOpacity(0.06) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isConquistado ? AppColors.primarySage : Colors.grey.shade200,
+                          width: isConquistado ? 1.5 : 1.0,
+                        ),
+                      ),
+                      child: ListTile(
+                        onTap: () => _alternarConquista(id, isConquistado, dataKey),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        leading: Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: item['cor'].withOpacity(0.12),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(item['icone'], color: item['cor'], size: 26),
+                        ),
+                        title: Text(
+                          item['titulo'],
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textDark),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            item['descricao'],
+                            style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3),
+                          ),
+                        ),
+                        trailing: Icon(
+                          isConquistado ? Icons.check_circle_rounded : Icons.radio_button_unchecked_rounded,
+                          color: isConquistado ? AppColors.primarySage : Colors.grey.shade300,
+                          size: 26,
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
             ],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            conquista.titulo,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-              color: conquista.desbloqueada ? AppColors.textDark : Colors.grey.shade600,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            conquista.desbloqueada ? 'Desbloqueado!' : '${conquista.progressoAtual} / ${conquista.meta}',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: conquista.desbloqueada ? AppColors.secondaryMenta : AppColors.accentPeach,
-            ),
-          ),
-        ],
+          );
+        },
       ),
     );
   }
