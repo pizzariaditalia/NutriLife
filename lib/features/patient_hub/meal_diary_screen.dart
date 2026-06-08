@@ -19,10 +19,10 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
   @override
   void initState() {
     super.initState();
-    _gerarLinhaDoTempoAvançada();
+    _gerarLinhaDoTempoAvancada(); // CORRIGIDO: Sem caracteres especiais
   }
 
-  void _gerarLinhaDoTempoAvançada() {
+  void _gerarLinhaDoTempoAvancada() { // CORRIGIDO: Sem caracteres especiais
     final hoje = DateTime.now();
     _listaDeDias = List.generate(5, (index) {
       return hoje.add(Duration(days: index - 2));
@@ -34,8 +34,8 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
   }
 
   String _getNomeDiaSemana(int weekday) {
-    const dias = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
-    return dias[weekday];
+    const d = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
+    return d[weekday];
   }
 
   @override
@@ -50,7 +50,6 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
         backgroundColor: AppColors.primarySage,
         elevation: 0,
       ),
-      // 📡 ESCUTADOR PAI (STREAM 1): Monitora os dados cadastrais do usuário para pegar o Plano Alimentar Prescrito
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).snapshots(),
         builder: (context, userSnapshot) {
@@ -68,7 +67,6 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
 
           return Column(
             children: [
-              // TIMELINE CALENDAR
               Container(
                 color: AppColors.primarySage,
                 padding: const EdgeInsets.only(bottom: 16),
@@ -104,8 +102,6 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
                   ),
                 ),
               ),
-
-              // 📡 ESCUTADOR FILHO (STREAM 2): Monitora o histórico de consumo real do dia selecionado
               Expanded(
                 child: StreamBuilder<DocumentSnapshot>(
                   stream: FirebaseFirestore.instance
@@ -205,7 +201,6 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
     required this.corIcone,
   });
 
-  // 🔥 MECANISMO DE QUICK-LOG ULTRA-PREMIUM: Registra a meta prescrita inteira com 1 toque
   void _executarQuickLog(BuildContext context) async {
     final docRef = FirebaseFirestore.instance
         .collection('usuarios')
@@ -253,7 +248,6 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Cabeçalho do Bloco
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -263,13 +257,11 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
                 Expanded(
                   child: Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                 ),
-                Text('$totalKcalTurno kcal', style: const TextStyle(fontSize: 16, fontWeights: FontWeight.bold, color: AppColors.primarySage)),
+                Text('$totalKcalTurno kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)), // CORRIGIDO: fontWeight
               ],
             ),
           ),
           const Divider(height: 1),
-
-          // 🍏 CARD DA PRESCRIÇÃO DA NUTRI (DIETBOX STYLE)
           Container(
             width: double.infinity,
             margin: const EdgeInsets.all(12),
@@ -292,7 +284,6 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
                         Text('Meta Prescrita pela Nutri', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primarySage, letterSpacing: 0.3)),
                       ],
                     ),
-                    // Botão Quick-Log de 1 toque se o turno estiver vazio
                     if (alimentosDoTurno.isEmpty && prescricaoTexto.length > 50)
                       GestureDetector(
                         onTap: () => _executarQuickLog(context),
@@ -312,8 +303,6 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
               ],
             ),
           ),
-
-          // Lista de alimentos consumidos individualmente (caso usem a busca)
           if (alimentosDoTurno.isNotEmpty)
             ListView.separated(
               shrinkWrap: true,
@@ -343,8 +332,6 @@ class _ConstruirBlocoTurnoPremium extends StatelessWidget {
                 );
               },
             ),
-
-          // Botão manual de pesquisa alternativa
           InkWell(
             onTap: () {
               Navigator.push(context, MaterialPageRoute(builder: (context) => FoodSearchScreen(turno: titulo)));
