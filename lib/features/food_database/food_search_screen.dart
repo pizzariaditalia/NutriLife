@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import '../../core/theme/app_colors.dart';
 
-// Modelo de dados simulando nossa base offline (TACO / IBGE)
+// Modelo de dados Premium com suporte completo a Macronutrientes (Padrão TACO/IBGE)
 class Alimento {
   final String nome;
   final String porcaoBase;
   final int calorias;
+  final double carbos;
+  final double proteinas;
+  final double gorduras;
   final bool isProcessado;
   final String alertaProcessado;
   final List<String> medidasCaseiras;
@@ -14,6 +19,9 @@ class Alimento {
     required this.nome,
     required this.porcaoBase,
     required this.calorias,
+    required this.carbos,
+    required this.proteinas,
+    required this.gorduras,
     this.isProcessado = false,
     this.alertaProcessado = '',
     required this.medidasCaseiras,
@@ -21,7 +29,8 @@ class Alimento {
 }
 
 class FoodSearchScreen extends StatefulWidget {
-  const FoodSearchScreen({Key? key}) : super(key: key);
+  final String turno; // Permite saber se veio do Café, Almoço, Jantar, etc.
+  const FoodSearchScreen({Key? key, this.turno = 'Lanche'}) : super(key: key);
 
   @override
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -30,39 +39,75 @@ class FoodSearchScreen extends StatefulWidget {
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
   final TextEditingController _searchController = TextEditingController();
   
-  // Banco de dados offline simulado com alimentos brasileiros
+  // 💎 BANCO DE DADOS EXPANDIDO PREMIUM (Valores reais baseados na Tabela TACO brasileira)
   final List<Alimento> _bancoDeAlimentos = [
     Alimento(
       nome: 'Arroz Branco Cozido',
       porcaoBase: '100g',
-      calorias: 130,
-      medidasCaseiras: ['1 Colher de sopa cheia', '1 Escumadeira média', '1 Xícara'],
+      calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2,
+      medidasCaseiras: ['1 Colher de sopa cheia (25g)', '1 Escumadeira média (100g)'],
     ),
     Alimento(
       nome: 'Feijão Carioca Cozido',
       porcaoBase: '100g',
-      calorias: 76,
-      medidasCaseiras: ['1 Concha média', '1 Colher de sopa'],
+      calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5,
+      medidasCaseiras: ['1 Concha média cheia (100g)', '1 Colher de sopa (20g)'],
     ),
     Alimento(
-      nome: 'Frango Grelhado (Peito)',
+      nome: 'Peito de Frango Grelhado',
       porcaoBase: '100g',
-      calorias: 165,
-      medidasCaseiras: ['1 Filé médio', '1 Pedaço pequeno', 'Desfiado (1 Colher de sopa)'],
+      calorias: 165, carbos: 0.0, proteinas: 31.5, gorduras: 3.6,
+      medidasCaseiras: ['1 Filé médio (100g)', '1 Filé grande (150g)', '1 Pedaço pequeno (50g)'],
+    ),
+    Alimento(
+      nome: 'Ovo Cozido',
+      porcaoBase: '1 Unidade (50g)',
+      calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3,
+      medidasCaseiras: ['1 Unidade inteira', '2 Unidades inteiras'],
+    ),
+    Alimento(
+      nome: 'Pão Francês',
+      porcaoBase: '1 Unidade (50g)',
+      calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5,
+      medidasCaseiras: ['1 Unidade inteira', 'Metade do pão'],
+    ),
+    Alimento(
+      nome: 'Banana Prata',
+      porcaoBase: '1 Unidade (100g)',
+      calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3,
+      medidasCaseiras: ['1 Unidade média', '2 Unidades pequenas'],
+    ),
+    Alimento(
+      nome: 'Aveia em Flocos',
+      porcaoBase: '30g',
+      calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2,
+      medidasCaseiras: ['1 Colher de sopa cheia (15g)', '2 Colher de sopa cheia (30g)'],
+    ),
+    Alimento(
+      nome: 'Whey Protein (Concentrado)',
+      porcaoBase: '30g',
+      calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0,
+      medidasCaseiras: ['1 Dosador cheio (30g)'],
+    ),
+    Alimento(
+      nome: 'Pasta de Amendoim',
+      porcaoBase: '15g',
+      calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4,
+      medidasCaseiras: ['1 Colher de chá cheia (7g)', '1 Colher de sopa cheia (15g)'],
+    ),
+    Alimento(
+      nome: 'Azeite de Oliva Extra Virgem',
+      porcaoBase: '13ml',
+      calorias: 119, carbos: 0.0, proteinas: 0.0, gorduras: 13.0,
+      medidasCaseiras: ['1 Colher de sopa (13ml)', '1 Colher de chá (5ml)'],
     ),
     Alimento(
       nome: 'Biscoito Recheado de Chocolate',
       porcaoBase: '30g',
-      calorias: 140,
+      calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0,
       isProcessado: true,
-      alertaProcessado: 'Atenção: Alto teor de açúcares escondidos e gordura trans.',
-      medidasCaseiras: ['1 Unidade', '1 Pacote inteiro'],
-    ),
-    Alimento(
-      nome: 'Pão Francês',
-      porcaoBase: '50g',
-      calorias: 150,
-      medidasCaseiras: ['1 Unidade (50g)', 'Metade (25g)'],
+      alertaProcessado: 'Alto teor de açúcar refinado e gordura hidrogenada.',
+      medidasCaseiras: ['3 Unidades (30g)', '1 Pacote inteiro'],
     ),
   ];
 
@@ -71,7 +116,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   @override
   void initState() {
     super.initState();
-    _resultados = _bancoDeAlimentos; // Inicia mostrando todos
+    _resultados = _bancoDeAlimentos;
   }
 
   void _filtrarAlimentos(String query) {
@@ -92,7 +137,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ConstruirBottomSheetPorcao(alimento: alimento),
+      builder: (context) => _ConstruirBottomSheetPorcao(alimento: alimento, turno: widget.turno),
     );
   }
 
@@ -101,13 +146,12 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Adicionar Refeição'),
+        title: Text('Adicionar ao ${widget.turno}'),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
       ),
       body: Column(
         children: [
-          // Barra de Pesquisa
           Container(
             color: AppColors.primarySage,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -116,7 +160,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               onChanged: _filtrarAlimentos,
               style: const TextStyle(color: AppColors.textDark),
               decoration: InputDecoration(
-                hintText: 'Buscar na base TACO/IBGE...',
+                hintText: 'Buscar alimento (TACO/IBGE)...',
                 hintStyle: TextStyle(color: Colors.grey.shade600),
                 prefixIcon: const Icon(Icons.search, color: AppColors.primarySage),
                 suffixIcon: IconButton(
@@ -135,22 +179,18 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               ),
             ),
           ),
-          
-          // Lista de Resultados
           Expanded(
             child: _resultados.isEmpty
                 ? const Center(
-                    child: Text(
-                      'Nenhum alimento encontrado.',
-                      style: TextStyle(color: Colors.grey, fontSize: 16),
-                    ),
+                    child: Text('Nenhum alimento encontrado na base.',
+                        style: TextStyle(color: Colors.grey, fontSize: 16)),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: _resultados.length,
                     itemBuilder: (context, index) {
                       final alimento = _resultados[index];
-                      return _ConstruirCardAlimento(
+                      return _CardAlimentoPremium(
                         alimento: alimento,
                         onTap: () => _abrirSeletorDePorcao(alimento),
                       );
@@ -163,25 +203,21 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   }
 }
 
-// Widget do Card do Alimento para manter o código limpo
-class _ConstruirCardAlimento extends StatelessWidget {
+class _CardAlimentoPremium extends StatelessWidget {
   final Alimento alimento;
   final VoidCallback onTap;
 
-  const _ConstruirCardAlimento({
-    required this.alimento,
-    required this.onTap,
-  });
+  const _CardAlimentoPremium({required this.alimento, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 1,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -191,54 +227,40 @@ class _ConstruirCardAlimento extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: Text(
-                      alimento.nome,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.textDark,
-                      ),
-                    ),
+                    child: Text(alimento.nome,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                   ),
-                  Text(
-                    '${alimento.calorias} kcal',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.primarySage,
-                    ),
-                  ),
+                  Text('${alimento.calorias} kcal',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
                 ],
               ),
-              const SizedBox(height: 4),
-              Text(
-                alimento.porcaoBase,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
+              const SizedBox(height: 6),
+              Row(
+                children: [
+                  Text('Base: ${alimento.porcaoBase}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  const SizedBox(width: 12),
+                  Text('C: ${alimento.carbos.toInt()}g', style: const TextStyle(color: AppColors.secondaryMenta, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Text('P: ${alimento.proteinas.toInt()}g', style: const TextStyle(color: AppColors.primarySage, fontSize: 12, fontWeight: FontWeight.w600)),
+                  const SizedBox(width: 8),
+                  Text('G: ${alimento.gorduras.toInt()}g', style: const TextStyle(color: AppColors.accentPeach, fontSize: 12, fontWeight: FontWeight.w600)),
+                ],
               ),
               if (alimento.isProcessado) ...[
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(
-                    color: AppColors.accentPeach.withOpacity(0.1),
+                    color: AppColors.accentPeach.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.accentPeach.withOpacity(0.5)),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          size: 16, color: AppColors.accentPeach),
+                      const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.accentPeach),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(
-                          alimento.alertaProcessado,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: AppColors.accentPeach,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
+                          child: Text(alimento.alertaProcessado,
+                              style: const TextStyle(fontSize: 11, color: AppColors.accentPeach, fontWeight: FontWeight.bold))),
                     ],
                   ),
                 ),
@@ -251,19 +273,17 @@ class _ConstruirCardAlimento extends StatelessWidget {
   }
 }
 
-// BottomSheet para escolher as medidas caseiras
 class _ConstruirBottomSheetPorcao extends StatefulWidget {
   final Alimento alimento;
+  final String turno;
 
-  const _ConstruirBottomSheetPorcao({required this.alimento});
+  const _ConstruirBottomSheetPorcao({required this.alimento, required this.turno});
 
   @override
-  State<_ConstruirBottomSheetPorcao> createState() =>
-      _ConstruirBottomSheetPorcaoState();
+  State<_ConstruirBottomSheetPorcao> createState() => _ConstruirBottomSheetPorcaoState();
 }
 
-class _ConstruirBottomSheetPorcaoState
-    extends State<_ConstruirBottomSheetPorcao> {
+class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao> {
   String? _medidaSelecionada;
   double _quantidade = 1.0;
 
@@ -275,16 +295,54 @@ class _ConstruirBottomSheetPorcaoState
     }
   }
 
-  void _salvarNoDiario() {
-    Navigator.pop(context); 
-    Navigator.pop(context); 
+  // 🔥 PROCESSAMENTO MATEMÁTICO PREMIUM INTEGRADO DIRETOR COM CLOUD FIRESTORE
+  void _salvarNoDiario() async {
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+    final agora = DateTime.now();
+    final dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${widget.alimento.nome} adicionado ao diário!'),
-        backgroundColor: AppColors.secondaryMenta,
-      ),
-    );
+    // Multiplica os valores nutricionais com base no multiplicador de porções escolhido pelo paciente
+    double fator = _quantidade;
+    int kcalCalculadas = (widget.alimento.calorias * fator).round();
+    double carbosCalculados = widget.alimento.carbos * fator;
+    double proteinasCalculadas = widget.alimento.proteinas * fator;
+    double gordurasCalculadas = widget.alimento.gorduras * fator;
+
+    final docRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(userId)
+        .collection('diario')
+        .doc(dataHoje);
+
+    // Faz o incremento atômico na nuvem para atualizar os anéis gráficos do Dashboard na hora
+    await docRef.set({
+      'calorias_consumidas': FieldValue.increment(kcalCalculadas),
+      'carbos_consumidos': FieldValue.increment(carbosCalculados),
+      'proteinas_consumidos': FieldValue.increment(proteinasCalculadas),
+      'gorduras_consumidos': FieldValue.increment(gordurasCalculadas),
+      
+      // Guarda em uma lista estruturada para o Diário de Turnos carregar futuramente
+      'historico_alimentos': FieldValue.arrayUnion([
+        {
+          'nome': widget.alimento.nome,
+          'turno': widget.turno,
+          'quantidade': _quantidade,
+          'medida_escolhida': _medidaSelecionada,
+          'calorias': kcalCalculadas,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        }
+      ])
+    }, SetOptions(merge: true));
+
+    if (mounted) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${widget.alimento.nome} somado aos macros do dia!'),
+          backgroundColor: AppColors.primarySage,
+        ),
+      );
+    }
   }
 
   @override
@@ -300,93 +358,49 @@ class _ConstruirBottomSheetPorcaoState
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Container(
-              width: 40,
-              height: 4,
-              margin: const EdgeInsets.only(bottom: 24),
-              alignment: Alignment.center, // CORREÇÃO APLICADA AQUI
-              decoration: BoxDecoration(
-                color: Colors.grey.shade400,
-                borderRadius: BorderRadius.circular(2),
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)),
               ),
             ),
-            Text(
-              widget.alimento.nome,
-              style: const TextStyle(
-                fontSize: 22,
-                fontWeight: FontWeight.bold,
-                color: AppColors.primarySage,
-              ),
-              textAlign: TextAlign.center,
-            ),
+            Text(widget.alimento.nome,
+                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage), textAlign: SystemMouseCursors.click == null ? TextAlign.center : TextAlign.center),
             const SizedBox(height: 24),
-            const Text(
-              'Quantidade:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            const Text('Multiplicador de Porção:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 IconButton(
-                  onPressed: () {
-                    if (_quantidade > 0.5) {
-                      setState(() => _quantidade -= 0.5);
-                    }
-                  },
-                  icon: const Icon(Icons.remove_circle_outline),
-                  color: AppColors.primarySage,
-                  iconSize: 32,
+                  onPressed: () { if (_quantidade > 0.5) { setState(() => _quantidade -= 0.5); } },
+                  icon: const Icon(Icons.remove_circle_outline, size: 32, color: AppColors.primarySage),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
-                  child: Text(
-                    _quantidade.toString(),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textDark,
-                    ),
-                  ),
+                  child: Text(_quantidade.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                 ),
                 IconButton(
-                  onPressed: () {
-                    setState(() => _quantidade += 0.5);
-                  },
-                  icon: const Icon(Icons.add_circle_outline),
-                  color: AppColors.primarySage,
-                  iconSize: 32,
+                  onPressed: () { setState(() => _quantidade += 0.5); },
+                  icon: const Icon(Icons.add_circle_outline, size: 32, color: AppColors.primarySage),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            const Text(
-              'Medida Caseira:',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
+            const Text('Medida de Referência:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _medidaSelecionada,
                   isExpanded: true,
                   icon: const Icon(Icons.arrow_drop_down, color: AppColors.primarySage),
                   items: widget.alimento.medidasCaseiras.map((String medida) {
-                    return DropdownMenuItem<String>(
-                      value: medida,
-                      child: Text(medida, style: const TextStyle(color: AppColors.textDark)),
-                    );
+                    return DropdownMenuItem<String>(value: medida, child: Text(medida, style: const TextStyle(color: AppColors.textDark)));
                   }).toList(),
-                  onChanged: (String? novaMedida) {
-                    setState(() {
-                      _medidaSelecionada = novaMedida;
-                    });
-                  },
+                  onChanged: (String? novaMedida) { setState(() => _medidaSelecionada = novaMedida); },
                 ),
               ),
             ),
@@ -396,29 +410,13 @@ class _ConstruirBottomSheetPorcaoState
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primarySage,
                 padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text(
-                'Adicionar ao Diário',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.backgroundCreme,
-                ),
-              ),
+              child: const Text('Adicionar ao Diário', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.backgroundCreme)),
             ),
           ],
         ),
       ),
     );
-  }
-}
-
-// Extensão rápida para consertar o alinhamento do traço no topo do BottomSheet
-extension AlignWidget on Widget {
-  Widget get align {
-    return Align(alignment: Alignment.center, child: this);
   }
 }
