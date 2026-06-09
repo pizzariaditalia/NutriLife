@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/theme/app_colors.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:nutri_life/core/theme/app_colors.dart';
+import 'package:nutri_life/core/services/imgbb_service.dart';
 
 class EvolutionGalleryScreen extends StatefulWidget {
   const EvolutionGalleryScreen({Key? key}) : super(key: key);
@@ -14,83 +14,51 @@ class EvolutionGalleryScreen extends StatefulWidget {
 
 class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
-  final ImagePicker _picker = ImagePicker();
-  
-  String? _pathAntes;
-  String? _dataAntes;
-  String? _pathDepois;
-  String? _dataDepois;
-  bool _processando = false;
+  final _picker = ImagePicker();
+  String _uploadingKey = ''; // Controla qual slot está carregando no momento
 
-  @override
-  void initState() {
-    super.initState();
-    _carregarFotosEvolucao();
+  void _selecionarImagem(String chaveSlot) {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library, color: AppColors.primarySage),
+              title: const Text('Escolher da Galeria do Celular'),
+              onTap: () => _fazerUploadSlot(chaveSlot, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt, color: AppColors.primarySage),
+              title: const Text('Tirar Foto com a Câmera'),
+              onTap: () => _fazerUploadSlot(chaveSlot, ImageSource.camera),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
-  // 📡 CARREGA CAMINHOS LOCAIS: Pega o texto do endereço do arquivo no Firestore
-  void _carregarFotosEvolucao() async {
-    try {
-      final doc = await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(_userId)
-          .collection('evolucao_corporal')
-          .doc('fotos_perfil')
-          .get();
+  void _fazerUploadSlot(String chaveSlot, ImageSource source) async {
+    Navigator.pop(context);
+    final XFile? foto = await _picker.pickImage(imageSource: source, imageQuality: 70);
+    
+    if (foto != null) {
+      setState(() => _uploadingKey = chaveSlot);
       
-      if (doc.exists && doc.data() != null) {
-        final dados = doc.data()!;
-        setState(() {
-          _pathAntes = dados['path_antes'];
-          _dataAntes = dados['data_antes'];
-          _pathDepois = dados['path_depois'];
-          _dataDepois = dados['data_depois'];
-        });
+      String? linkUrl = await ImgBbService.uploadImage(foto);
+      
+      if (linkUrl != null) {
+        // Salva a string da imagem exatamente no slot correto (ex: antes_1, depois_3)
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(_userId)
+            .collection('galeria')
+            .doc('fotos_atuais')
+            .set({chaveSlot: linkUrl}, SetOptions(merge: true));
       }
-    } catch (e) {
-      debugPrint('Erro ao carregar caminhos de imagem: $e');
-    }
-  }
-
-  // 📸 FUNÇÃO ADAPTADA: Abre a câmera, tira a foto e salva o caminho do arquivo no banco
-  void _capturarFotoLocal(String tipo) async {
-    final XFile? fotoCapturada = await _picker.pickImage(source: ImageSource.camera, imageQuality: 80);
-    if (fotoCapturada == null) return;
-
-    setState(() => _processando = true);
-    final dataHoje = "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}";
-
-    try {
-      // 💾 Salva apenas o caminho textual do arquivo no Cloud Firestore
-      await FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(_userId)
-          .collection('evolucao_corporal')
-          .doc('fotos_perfil')
-          .set({
-        'path_$tipo': fotoCapturada.path,
-        'data_$tipo': dataHoje,
-      }, SetOptions(merge: true));
-
-      setState(() {
-        if (tipo == 'antes') {
-          _pathAntes = fotoCapturada.path;
-          _dataAntes = dataHoje;
-        } else {
-          _pathDepois = fotoCapturada.path;
-          _dataDepois = dataHoje;
-        }
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Evolução visual registrada com sucesso! 💪'), backgroundColor: AppColors.primarySage),
-        );
-      }
-    } catch (e) {
-      debugPrint('Erro ao registrar imagem: $e');
-    } finally {
-      setState(() => _processando = false);
+      
+      if (mounted) setState(() => _uploadingKey = '');
     }
   }
 
@@ -99,87 +67,83 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Galeria de Evolução Corporal'),
+        title: const Text('Galeria de Evolução visual', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: _processando
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primarySage))
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const Text('Antes e Depois ⚖️', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                  const SizedBox(height: 8),
-                  Text('A balança não conta a história toda. Tire fotos para registrar e comparar sua queima de gordura e ganho de massa de forma 100% gratuita.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                  const SizedBox(height: 32),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('galeria').doc('fotos_atuais').snapshots(),
+        builder: (context, snapshot) {
+          Map<String, dynamic> fotos = {};
+          if (snapshot.hasData && snapshot.data!.exists) {
+            fotos = snapshot.data!.data() as Map<String, dynamic>;
+          }
 
-                  // Moldura Antes
-                  _construirMolduraFoto(titulo: 'Foto Inicial (Antes)', photoPath: _pathAntes, data: _dataAntes, onTap: () => _capturarFotoLocal('antes')),
-                  const SizedBox(height: 24),
-                  const Center(child: Icon(Icons.compare_arrows_rounded, size: 40, color: AppColors.accentPeach)),
-                  const SizedBox(height: 24),
-                  // Moldura Depois
-                  _construirMolduraFoto(titulo: 'Foto Atual (Depois)', photoPath: _pathDepois, data: _dataDepois, onTap: () => _capturarFotoLocal('depois')),
-                  const SizedBox(height: 40),
+          return ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              const Text('Sua Jornada Visual 📸', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              const SizedBox(height: 6),
+              Text('Monitore suas mudanças físicas. Suas fotos estão seguras e privadas.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              const SizedBox(height: 32),
+
+              // SEÇÃO ANTES
+              const Text('FOTOS DE ANTES (INÍCIO)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primarySage, letterSpacing: 1)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildSlotFoto('antes_1', fotos['antes_1'])),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildSlotFoto('antes_2', fotos['antes_2'])),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildSlotFoto('antes_3', fotos['antes_3'])),
                 ],
               ),
-            ),
+
+              const SizedBox(height: 36),
+
+              // SEÇÃO DEPOIS
+              const Text('FOTOS DE DEPOIS (ATUAL)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.accentPeach, letterSpacing: 1)),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  Expanded(child: _buildSlotFoto('depois_1', fotos['depois_1'])),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildSlotFoto('depois_2', fotos['depois_2'])),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildSlotFoto('depois_3', fotos['depois_3'])),
+                ],
+              ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _construirMolduraFoto({required String titulo, required String? photoPath, required String? data, required VoidCallback onTap}) {
-    // Verifica se a string do caminho existe e se o arquivo físico está presente no celular
-    final bool hasPhoto = photoPath != null && File(photoPath).existsSync();
-    
-    return Container(
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.shade100)),
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 15)),
-                if (hasPhoto) Text(data ?? '', style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
-              ],
-            ),
+  Widget _buildSlotFoto(String chaveSlot, String? urlString) {
+    bool carregandoEsteSlot = _uploadingKey == chaveSlot;
+
+    return AspectRatio(
+      aspectRatio: 1, // 🔒 PROPORÇÃO FIXADA: Força um quadrado perfeito e impede quebras de layout
+      child: GestureDetector(
+        onTap: carregandoEsteSlot ? null : () => _selecionarImagem(chaveSlot),
+        child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.grey.shade200, width: 1.5),
+            image: urlString != null ? DecorationImage(image: NetworkImage(urlString), fit: BoxFit.cover) : null,
           ),
-          GestureDetector(
-            onTap: onTap,
-            child: Container(
-              width: double.infinity,
-              height: 300,
-              decoration: BoxDecoration(
-                color: AppColors.backgroundCreme.withOpacity(0.5),
-              ),
-              // 🖼️ IMPRIME NA TELA: Puxa o arquivo físico diretamente do armazenamento interno do celular
-              child: hasPhoto
-                  ? Image.file(File(photoPath), fit: BoxFit.cover, width: double.infinity, height: 300)
-                  : Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.camera_alt_outlined, size: 48, color: AppColors.primarySage.withOpacity(0.3)),
-                        const SizedBox(height: 12),
-                        const Text('Toque para abrir a câmera', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 13)),
-                        const Text('(Frente, Lado ou Costas)', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                      ],
-                    ),
-            ),
-          ),
-          if (hasPhoto)
-            InkWell(
-              onTap: onTap,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                decoration: const BoxDecoration(color: AppColors.primarySage, borderRadius: BorderRadius.vertical(bottom: Radius.circular(24))),
-                child: const Center(child: Text('Atualizar Foto Atual 🔄', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))),
-              ),
-            ),
-        ],
+          child: urlString == null 
+              ? Center(
+                  child: carregandoEsteSlot 
+                      ? const CircularProgressIndicator(color: AppColors.primarySage)
+                      : Icon(Icons.add_a_photo_outlined, color: Colors.grey.shade400, size: 26),
+                )
+              : const SizedBox(),
+        ),
       ),
     );
   }
