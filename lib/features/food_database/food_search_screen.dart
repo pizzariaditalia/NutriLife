@@ -9,7 +9,8 @@ import 'barcode_scanner_screen.dart';
 
 class FoodSearchScreen extends StatefulWidget {
   final String turno;
-  const FoodSearchScreen({Key? key, required this.turno}) : super(key: key);
+  // 🛠️ CORREÇÃO AQUI: Removemos o "required" e colocamos 'Geral' como padrão
+  const FoodSearchScreen({Key? key, this.turno = 'Geral'}) : super(key: key);
 
   @override
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
@@ -20,7 +21,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   Timer? _debounce;
   bool _buscandoNaNuvem = false;
 
-  // 📝 Lista Local Rápida (Sempre aparece antes de pesquisar)
+  // 📝 Lista Local Rápida
   List<Map<String, dynamic>> _resultados = [
     {'nome': 'Arroz Branco Cozido', 'marca': 'Caseiro', 'kcal': 130, 'carbos': 28.0, 'proteinas': 2.0, 'gorduras': 0.0, 'porcao': '100g'},
     {'nome': 'Feijão Carioca Cozido', 'marca': 'Caseiro', 'kcal': 76, 'carbos': 14.0, 'proteinas': 4.0, 'gorduras': 0.0, 'porcao': '100g'},
@@ -36,15 +37,14 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     super.dispose();
   }
 
-  // 🌐 MOTOR DE BUSCA GLOBAL (OPEN FOOD FACTS)
+  // 🌐 MOTOR DE BUSCA GLOBAL
   void _pesquisarAlimento(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     
-    // Espera o usuário parar de digitar por 800ms antes de chamar a internet
     _debounce = Timer(const Duration(milliseconds: 800), () async {
       if (query.trim().isEmpty) {
         setState(() => _buscandoNaNuvem = false);
-        return; // Mostra a lista local de novo se apagar a busca
+        return; 
       }
 
       setState(() => _buscandoNaNuvem = true);
@@ -71,7 +71,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
             }
 
             final double kcal = obterValorSeguro('energy-kcal_100g');
-            // Só adiciona se tiver informação calórica válida
             if (kcal > 0) {
               novosResultados.add({
                 'nome': p['product_name_pt'] ?? p['product_name'] ?? 'Produto',
@@ -99,7 +98,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     });
   }
 
-  // 📝 PAINEL DE AJUSTE DE PORÇÃO (Idêntico ao do Leitor de Código de Barras)
+  // 📝 PAINEL DE AJUSTE
   void _mostrarPainelDeConfirmacao(Map<String, dynamic> produto) {
     TextEditingController kcalController = TextEditingController(text: produto['kcal'].toString());
     TextEditingController porcaoController = TextEditingController(text: '1.0');
@@ -210,7 +209,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       'historico_alimentos': FieldValue.arrayUnion([
         {
           'nome': "${produtoBase['nome']} (${produtoBase['marca']})",
-          'turno': widget.turno,
+          'turno': widget.turno, // Vai ser 'Geral' se aberto pela barra inferior
           'quantidade': multiplicador,
           'medida_escolhida': produtoBase['porcao'],
           'calorias': caloriasTotais,
@@ -221,8 +220,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
 
     if (mounted) {
       Navigator.pop(context); // Fecha o dialog
-      Navigator.pop(context); // Volta pro diário
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚡ Adicionado ao ${widget.turno}!'), backgroundColor: AppColors.primarySage));
+      Navigator.pop(context); // Volta
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚡ Adicionado com sucesso!'), backgroundColor: AppColors.primarySage));
     }
   }
 
@@ -231,7 +230,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: Text('Adicionar ao ${widget.turno}', style: const TextStyle(color: Colors.white)),
+        title: Text(widget.turno == 'Geral' ? 'Busca Global' : 'Adicionar ao ${widget.turno}', style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.white),
