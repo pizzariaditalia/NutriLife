@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'core/theme/app_colors.dart';
-import 'features/patient_hub/dashboard_screen.dart';
-// Certifique-se de que o caminho dos imports abaixo batem com as suas pastas reais
-import 'features/patient_hub/diary_screen.dart'; 
-import 'features/patient_hub/workouts_screen.dart';
-import 'features/food_database/food_search_screen.dart';
-import 'features/patient_hub/achievements_screen.dart'; // Se não existir, crie um esqueleto igual ao de treinos
+// 🚀 CORREÇÃO: Importações absolutas blindadas contra erros de pastas!
+import 'package:nutri_life/core/theme/app_colors.dart';
+import 'package:nutri_life/features/patient_hub/dashboard_screen.dart';
+import 'package:nutri_life/features/patient_hub/diary_screen.dart'; 
+import 'package:nutri_life/features/patient_hub/workouts_screen.dart';
+import 'package:nutri_life/features/food_database/food_search_screen.dart';
+import 'package:nutri_life/features/patient_hub/achievements_screen.dart'; 
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -20,7 +20,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _telas = [
     const DashboardScreen(),
     const DiaryScreen(),
-    const WorkoutsScreen(), // 🏃 NOVO: Módulo Fitness
+    const WorkoutsScreen(), 
     const FoodSearchScreen(turno: 'Geral'),
     const AchievementsScreen(),
   ];
