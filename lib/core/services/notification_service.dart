@@ -6,7 +6,7 @@ class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
   static Future<void> inicializar() async {
-    // ✅ Inicializa os fusos horários exigidos pela v17
+    // Inicializa os fusos horários exigidos pela v17
     tz.initializeTimeZones(); 
 
     const AndroidInitializationSettings initializationSettingsAndroid =
@@ -26,7 +26,6 @@ class NotificationService {
     required int hora,
     required int minuto,
   }) async {
-    // ✅ Nova lógica de agendamento usando zonedSchedule
     final now = tz.TZDateTime.now(tz.local);
     var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hora, minuto);
     
@@ -52,6 +51,8 @@ class NotificationService {
       ),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time,
+      // ✅ AQUI ESTÁ O PARÂMETRO OBRIGATÓRIO QUE FALTAVA
+      uiLocalNotificationDateInterpretation: UILocalNotificationDateInterpretation.absoluteTime,
     );
   }
 
