@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-// 🚀 CORREÇÃO: Importações absolutas blindadas contra erros de pastas!
 import 'package:nutri_life/core/theme/app_colors.dart';
 import 'package:nutri_life/features/patient_hub/dashboard_screen.dart';
-import 'package:nutri_life/features/patient_hub/diary_screen.dart'; 
+// 🚀 CORREÇÃO: O nome exato que estava no seu print!
+import 'package:nutri_life/features/patient_hub/meal_diary_screen.dart'; 
 import 'package:nutri_life/features/patient_hub/workouts_screen.dart';
 import 'package:nutri_life/features/food_database/food_search_screen.dart';
 import 'package:nutri_life/features/patient_hub/achievements_screen.dart'; 
@@ -19,7 +19,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   final List<Widget> _telas = [
     const DashboardScreen(),
-    const DiaryScreen(),
+    const MealDiaryScreen(), // 🚀 CORREÇÃO: Chamando a classe com o nome correto
     const WorkoutsScreen(), 
     const FoodSearchScreen(turno: 'Geral'),
     const AchievementsScreen(),
