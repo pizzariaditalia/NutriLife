@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart'; // Puxa o cofre de chaves que você acabou de criar
 import 'core/services/notification_service.dart';
 import 'features/auth/login_screen.dart';
 
@@ -27,23 +28,23 @@ class _AppInicializadorState extends State<AppInicializador> {
 
   Future<void> _ligarSistemasDoAplicativo() async {
     try {
-      // 1. Liga o Firebase no modo tradicional do Android
-      await Firebase.initializeApp();
+      // 🚀 INICIALIZAÇÃO PURA EM DART (Bypass do Android Nativo)
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
 
-      // 2. Tenta ligar os Alarmes
       try {
         await NotificationService.inicializar();
       } catch (erroAlarme) {
-        debugPrint('Aviso: Lembretes falharam ao iniciar - $erroAlarme');
+        debugPrint('Aviso: Lembretes falharam: $erroAlarme');
       }
 
-      // Tudo ligou com sucesso! Libera o aplicativo.
       if (mounted) {
         setState(() => _tudoPronto = true);
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _mensagemErro = 'Erro de Inicialização do Firebase:\n\n$e');
+        setState(() => _mensagemErro = 'Erro de Inicialização:\n\n$e');
       }
     }
   }
