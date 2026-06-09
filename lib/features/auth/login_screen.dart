@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-import '../../main_navigation_screen.dart';
+// 🚀 CORREÇÃO 1: Importação absoluta (acha o arquivo em qualquer lugar)
+import 'package:nutri_life/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -23,19 +24,18 @@ class _LoginScreenState extends State<LoginScreen> {
     _verificarLoginSalvo();
   }
 
-  // 🔄 Verifica se já existe um usuário logado salvo no celular
   void _verificarLoginSalvo() async {
     final prefs = await SharedPreferences.getInstance();
     bool logado = prefs.getBool('usuario_logado') ?? false;
 
     if (logado && FirebaseAuth.instance.currentUser != null) {
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+        // 🚀 CORREÇÃO 2: Sem o 'const', garantindo a compilação lisa
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
       }
     }
   }
 
-  // 🔐 Função de Entrar
   void _entrar() async {
     if (_emailCtrl.text.isEmpty || _senhaCtrl.text.isEmpty) return;
     setState(() => _carregando = true);
@@ -52,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.red));
@@ -61,7 +61,6 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 🆕 Função de Criar Conta Nova
   void _criarConta() async {
     if (_emailCtrl.text.isEmpty || _senhaCtrl.text.isEmpty) return;
     setState(() => _carregando = true);
@@ -72,14 +71,13 @@ class _LoginScreenState extends State<LoginScreen> {
         password: _senhaCtrl.text.trim(),
       );
       
-      // Quando cria a conta, já entra automaticamente
       if (_lembrarDeMim) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('usuario_logado', true);
       }
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.red));
