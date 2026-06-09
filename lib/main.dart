@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'core/services/notification_service.dart'; // Import do Serviço
+import 'core/services/notification_service.dart';
 import 'features/auth/login_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializa o Firebase Engine
   await Firebase.initializeApp();
-  
-  // Inicializa o Motor de Notificações Locais Gratuitas 🔔
   await NotificationService.inicializar();
 
   runApp(const MyApp());
@@ -25,7 +22,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         fontFamily: 'Arial',
-        primarySwatch: Colors.emerald,
+        primarySwatch: Colors.green, // ✅ Corrigido
         useMaterial3: true,
       ),
       home: const LoginScreen(),
