@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-// 🚀 CORREÇÃO DEFINITIVA: Apontando para a pasta correta (patient_hub)
 import '../patient_hub/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,7 +53,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.redAccent),
+      );
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -79,7 +80,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.redAccent),
+      );
     } finally {
       if (mounted) setState(() => _carregando = false);
     }
@@ -88,46 +91,64 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primarySage,
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Container(
-            padding: const EdgeInsets.all(24.0),
-            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.eco, size: 60, color: AppColors.primarySage),
-                const SizedBox(height: 16),
-                const Text('Nutri Life', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                const SizedBox(height: 32),
+                const Icon(Icons.eco, size: 72, color: AppColors.primarySage),
+                const SizedBox(height: 12),
+                const Text(
+                  'Nutri Life',
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: AppColors.textDark, letterSpacing: 0.5),
+                ),
+                const SizedBox(height: 48),
                 
                 TextField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: InputDecoration(labelText: 'E-mail', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  style: const TextStyle(color: AppColors.textDark),
+                  decoration: InputDecoration(
+                    labelText: 'E-mail',
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primarySage, width: 2)),
+                  ),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 18),
                 
                 TextField(
                   controller: _senhaCtrl,
                   obscureText: true,
-                  decoration: InputDecoration(labelText: 'Senha', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                  style: const TextStyle(color: AppColors.textDark),
+                  decoration: InputDecoration(
+                    labelText: 'Senha',
+                    labelStyle: const TextStyle(color: Colors.grey),
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                    focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: const BorderSide(color: AppColors.primarySage, width: 2)),
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
 
                 Row(
                   children: [
-                    Checkbox(
-                      value: _lembrarDeMim,
-                      activeColor: AppColors.primarySage,
-                      onChanged: (valor) => setState(() => _lembrarDeMim = valor ?? true),
+                    SizedBox(
+                      width: 24, height: 24,
+                      child: Checkbox(
+                        value: _lembrarDeMim,
+                        activeColor: AppColors.primarySage,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        onChanged: (valor) => setState(() => _lembrarDeMim = valor ?? true),
+                      ),
                     ),
-                    const Text('Lembrar de mim', style: TextStyle(color: AppColors.textDark)),
+                    const SizedBox(width: 8),
+                    const Text('Lembrar de mim', style: TextStyle(color: AppColors.textDark, fontSize: 14, fontWeight: FontWeight.w500)),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 32),
 
                 _carregando 
                   ? const CircularProgressIndicator(color: AppColors.primarySage)
@@ -135,14 +156,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primarySage,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
                           onPressed: _entrar,
                           child: const Text('Entrar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 16),
                         TextButton(
                           onPressed: _criarConta,
-                          child: const Text('Criar Nova Conta', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                          child: const Text('Criar Nova Conta', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 14)),
                         )
                       ],
                     ),
