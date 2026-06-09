@@ -1,13 +1,13 @@
-name: Compilar Nutri Life (Android APK)
+name: Compilar APK
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   build:
-    name: Compilar APK
     runs-on: ubuntu-latest
 
     steps:
@@ -17,33 +17,35 @@ jobs:
       - name: Configurar Java JDK 17
         uses: actions/setup-java@v4
         with:
+          distribution: 'zulu'
           java-version: '17'
-          distribution: 'temurin'
 
       - name: Configurar ambiente Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.0'
           channel: 'stable'
 
       - name: Gerar Motor Android Básico
         run: |
           flutter create --platforms android --project-name nutri_life temp_app
-          cp -r temp_app/android ./android
+          # Limpa qualquer resquício antigo e move o motor novo gerado
+          rm -rf android
+          mv temp_app/android .
           rm -rf temp_app
-
-          
-          # 🟢 AJUSTE CIRÚRGICO: Mudamos de 21 para 23 para o Firebase Auth aceitar!
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
+          # Garante que o SDK mínimo seja 23 (Exigência do Firebase)
+          echo "flutter.minSdkVersion=23" >> android/local.properties
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
 
       - name: Construir o APK (Release)
-        run: flutter build apk --release
+        run: |
+          # Trava de segurança: Instala a ferramenta manualmente antes do Gradle agir
+          yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;30.0.3"
+          flutter build apk --release
 
       - name: Disponibilizar APK para Download
         uses: actions/upload-artifact@v4
         with:
-          name: NutriLife-APK
+          name: app-release
           path: build/app/outputs/flutter-apk/app-release.apk
