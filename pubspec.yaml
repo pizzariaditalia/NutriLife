@@ -12,10 +12,12 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
-  image_picker: ^1.0.4  # Mantemos para abrir a câmera nativa do celular
+  image_picker: ^1.0.4
   http: ^1.2.0
   mobile_scanner: ^5.0.0
   cupertino_icons: ^1.0.6
+  # 🔔 O motor de alarmes internos e gratuitos:
+  flutter_local_notifications: ^17.0.0
 
 dev_dependencies:
   flutter_test:
