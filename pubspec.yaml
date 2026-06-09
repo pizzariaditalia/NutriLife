@@ -12,11 +12,9 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
-  # 📸 Bibliotecas para o Módulo de Mídia (Antes e Depois)
-  firebase_storage: any # Armazena as fotos pesadas na nuvem
-  image_picker: ^1.0.4  # Abre a câmera e a galeria do celular
-  http: any
-  mobile_scanner: any
+  image_picker: ^1.0.4  # Mantemos para abrir a câmera nativa do celular
+  http: ^1.2.0
+  mobile_scanner: ^5.0.0
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
