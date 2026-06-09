@@ -12,12 +12,13 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
+  shared_preferences: ^2.2.2  # 🔐 Motor de Login Automático
   image_picker: ^1.0.4
   http: ^1.2.0
   mobile_scanner: ^5.0.0
   cupertino_icons: ^1.0.6
   flutter_local_notifications: ^17.0.0
-  timezone: ^0.9.2 # 🕰️ Adicionado para gerenciar os horários dos alarmes
+  timezone: ^0.9.2
 
 dev_dependencies:
   flutter_test:
