@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart'; // 🔑 O SEGREDO QUE EU HAVIA APAGADO VOLTOU!
 import 'core/services/notification_service.dart';
 import 'features/auth/login_screen.dart';
 
@@ -28,10 +27,8 @@ class _AppInicializadorState extends State<AppInicializador> {
 
   Future<void> _ligarSistemasDoAplicativo() async {
     try {
-      // 1. Liga o Firebase COM as chaves corretas da sua conta
-      await Firebase.initializeApp(
-        options: DefaultFirebaseOptions.currentPlatform,
-      );
+      // 1. Liga o Firebase no modo tradicional do Android
+      await Firebase.initializeApp();
 
       // 2. Tenta ligar os Alarmes
       try {
@@ -46,7 +43,7 @@ class _AppInicializadorState extends State<AppInicializador> {
       }
     } catch (e) {
       if (mounted) {
-        setState(() => _mensagemErro = 'Erro de Inicialização: $e');
+        setState(() => _mensagemErro = 'Erro de Inicialização do Firebase:\n\n$e');
       }
     }
   }
@@ -64,7 +61,7 @@ class _AppInicializadorState extends State<AppInicializador> {
               child: SingleChildScrollView(
                 child: Text(
                   _mensagemErro,
-                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 14),
+                  style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold, fontSize: 13),
                   textAlign: TextAlign.center,
                 ),
               ),
