@@ -31,8 +31,21 @@ jobs:
           rm -rf android
           mv temp_app/android .
           rm -rf temp_app
-          # 🚀 O GOLPE FINAL: Exigir API 26 anula a necessidade de Desugaring!
-          echo "flutter.minSdkVersion=26" >> android/local.properties
+          echo "flutter.minSdkVersion=23" >> android/local.properties
+          
+          # 🚀 A MÁGICA DO DESUGARING: Injeta a configuração obrigatória no Android
+          cat <<EOF >> android/app/build.gradle
+          
+          android {
+              compileOptions {
+                  coreLibraryDesugaringEnabled true
+              }
+          }
+          
+          dependencies {
+              coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.0.3'
+          }
+          EOF
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
