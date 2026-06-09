@@ -16,12 +16,11 @@ class _HabitsScreenState extends State<HabitsScreen> {
   void _alternarAlarmesAgua(bool valor) async {
     setState(() => _alarmeAgua = valor);
     if (valor) {
-      // Agenda disparos automáticos locais todos os dias de hora em hora (simulado por IDs)
       await NotificationService.agendarAlarmeDiario(id: 10, titulo: 'Hora de beber água! 💧', corpo: 'Mantenha o seu metabolismo ativo. Vá buscar 250ml agora.', hora: 10, minuto: 0);
       await NotificationService.agendarAlarmeDiario(id: 14, titulo: 'Beba Água! 🌊', corpo: 'Já completou metade da sua meta de hoje? Beba mais um copo.', hora: 14, minuto: 30);
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lembretes de Hidratação ativos! 💧'), backgroundColor: AppColors.primarySage));
     } else {
-      await NotificationService.cancelarTodosOsAlarmes(); // Zera o chip
+      await NotificationService.cancelarTodosOsAlarmes();
       setState(() => _alarmeRefeicoes = false);
     }
   }
@@ -55,21 +54,19 @@ class _HabitsScreenState extends State<HabitsScreen> {
           Text('Configure os despertadores internos para blindar a sua rotina e não esquecer os horários clínicos.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
           const SizedBox(height: 32),
 
-          // CARD ÁGUA
           Card(
             elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: SwitchListTile(
               title: const Text('Lembrete de Hidratação', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
               subtitle: const Text('Disparar alertas periódicos para ingestão de água.', style: TextStyle(fontSize: 12)),
               activeColor: AppColors.primarySage,
-              secondary: const CircleAvatar(backgroundColor: Colors.blueIndexed == null ? Color(0xFFE3F2FD) : Color(0xFFE3F2FD), child: Icon(Icons.water_drop, color: Colors.blue)),
+              secondary: const CircleAvatar(backgroundColor: Color(0xFFE3F2FD), child: Icon(Icons.water_drop, color: Colors.blue)), // ✅ Corrigido
               value: _alarmeAgua,
               onChanged: _alternarAlarmesAgua,
             ),
           ),
           const SizedBox(height: 12),
 
-          // CARD REFEIÇÕES
           Card(
             elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             child: SwitchListTile(
