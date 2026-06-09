@@ -9,6 +9,8 @@ import 'package:nutri_life/features/patient_hub/evolution_gallery_screen.dart';
 import 'package:nutri_life/features/patient_hub/habits_screen.dart';
 import 'package:nutri_life/features/patient_hub/bmi_stats_screen.dart';          
 import 'package:nutri_life/features/food_database/smart_recipes_screen.dart'; 
+// 🚀 NOVO IMPORT: Conecta a tela de Chat
+import 'package:nutri_life/features/chat/chat_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -99,8 +101,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: AppColors.primarySage,
         elevation: 0,
         actions: [
+          // 🚀 NOVO BOTÃO: Canal de chat direto com a Nutri
           IconButton(
-            icon: const Icon(Icons.account_circle, size: 28, color: Colors.white),
+            icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.account_circle, size: 26, color: Colors.white),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
           )
         ],
@@ -108,7 +115,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance.collection('usuarios').doc(_userId).get(),
         builder: (context, userSnapshot) {
-          // Detecta o objetivo do perfil (Padrão: Emagrecimento)
           String objetivo = 'Emagrecimento';
           if (userSnapshot.hasData && userSnapshot.data!.exists) {
             final dadosUser = userSnapshot.data!.data() as Map<String, dynamic>?;
@@ -131,7 +137,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 gorduras = (dados['gorduras_consumidos'] ?? 0).toDouble();
               }
 
-              // 🎯 MATEMÁTICA INTELIGENTE: Exercício altera o saldo final
               int restante = (meta - consumido + queimado).clamp(0, 9999);
 
               return SingleChildScrollView(
@@ -139,7 +144,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Foco: $objetivo 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                    Text('Foco: $objective 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
                     
                     _construirMotorDeInsights(consumido, meta, queimado, objetivo),
@@ -151,7 +156,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 24),
                     
-                    // Outras ferramentas mantidas integradas
                     _construirBotaoPeso(),
                     const SizedBox(height: 24),
                     const Text('Ferramentas Premium', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
@@ -262,7 +266,6 @@ class _CardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta),
-              // 🔥 HIPERTROFIA foca pesado em bater as Proteínas
               _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
               _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach),
             ],
