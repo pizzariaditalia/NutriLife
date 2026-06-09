@@ -1,96 +1,229 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:async';
 import '../../core/theme/app_colors.dart';
 import 'barcode_scanner_screen.dart';
 
-class Alimento {
-  final String nome;
-  final String porcaoBase;
-  final int calorias;
-  final double carbos;
-  final double proteinas;
-  final double gorduras;
-  final bool isProcessado;
-  final String alertaProcessado;
-  final List<String> medidasCaseiras;
-
-  Alimento({
-    required this.nome,
-    required this.porcaoBase,
-    required this.calorias,
-    required this.carbos,
-    required this.proteinas,
-    required this.gorduras,
-    this.isProcessado = false,
-    this.alertaProcessado = '',
-    required this.medidasCaseiras,
-  });
-}
-
 class FoodSearchScreen extends StatefulWidget {
   final String turno;
-  const FoodSearchScreen({Key? key, this.turno = 'Lanche'}) : super(key: key);
+  const FoodSearchScreen({Key? key, required this.turno}) : super(key: key);
 
   @override
   State<FoodSearchScreen> createState() => _FoodSearchScreenState();
 }
 
 class _FoodSearchScreenState extends State<FoodSearchScreen> {
-  final TextEditingController _searchController = TextEditingController();
-  
-  // 📚 BASE DE DADOS EXPANDIDA EM MASSA (PADRÃO PREMIUM TACO)
-  final List<Alimento> _bancoDeAlimentos = [
-    Alimento(nome: 'Arroz Branco Cozido', porcaoBase: '100g', calorias: 130, carbos: 28.0, proteinas: 2.5, gorduras: 0.2, medidasCaseiras: ['1 Colher de sopa (25g)', '1 Escumadeira (100g)']),
-    Alimento(nome: 'Arroz Integral Cozido', porcaoBase: '100g', calorias: 124, carbos: 25.8, proteinas: 2.6, gorduras: 1.0, medidasCaseiras: ['1 Colher de sopa (25g)', '1 Escumadeira (100g)']),
-    Alimento(nome: 'Feijão Carioca Cozido', porcaoBase: '100g', calorias: 76, carbos: 14.0, proteinas: 4.8, gorduras: 0.5, medidasCaseiras: ['1 Concha média (100g)']),
-    Alimento(nome: 'Feijão Preto Cozido', porcaoBase: '100g', calorias: 77, carbos: 14.0, proteinas: 4.5, gorduras: 0.5, medidasCaseiras: ['1 Concha média (100g)']),
-    Alimento(nome: 'Peito de Frango Grelhado', porcaoBase: '100g', calorias: 165, carbos: 0.0, proteinas: 31.5, gorduras: 3.6, medidasCaseiras: ['1 Filé médio (100g)', '1 Filé grande (150g)']),
-    Alimento(nome: 'Patinho Moído Grelhado', porcaoBase: '100g', calorias: 219, carbos: 0.0, proteinas: 35.9, gorduras: 7.3, medidasCaseiras: ['3 Colheres de sopa (100g)']),
-    Alimento(nome: 'Ovo Cozido', porcaoBase: '50g', calorias: 78, carbos: 0.6, proteinas: 6.3, gorduras: 5.3, medidasCaseiras: ['1 Unidade inteira']),
-    Alimento(nome: 'Ovo Frito', porcaoBase: '50g', calorias: 120, carbos: 0.6, proteinas: 6.3, gorduras: 10.1, medidasCaseiras: ['1 Unidade inteira']),
-    Alimento(nome: 'Pão Francês', porcaoBase: '50g', calorias: 150, carbos: 29.0, proteinas: 4.7, gorduras: 1.5, medidasCaseiras: ['1 Unidade (50g)']),
-    Alimento(nome: 'Pão de Forma Integral', porcaoBase: '50g', calorias: 110, carbos: 22.0, proteinas: 4.5, gorduras: 1.1, medidasCaseiras: ['2 Fatias (50g)']),
-    Alimento(nome: 'Tapioca (Goma Pronta)', porcaoBase: '50g', calorias: 120, carbos: 27.0, proteinas: 0.0, gorduras: 0.0, medidasCaseiras: ['3 Colheres de sopa (50g)']),
-    Alimento(nome: 'Cuscuz de Milho', porcaoBase: '100g', calorias: 112, carbos: 25.0, proteinas: 2.2, gorduras: 0.6, medidasCaseiras: ['1 Pedaço médio (100g)']),
-    Alimento(nome: 'Banana Prata', porcaoBase: '100g', calorias: 89, carbos: 23.0, proteinas: 1.3, gorduras: 0.3, medidasCaseiras: ['1 Unidade média']),
-    Alimento(nome: 'Maçã Fuji', porcaoBase: '100g', calorias: 56, carbos: 15.0, proteinas: 0.3, gorduras: 0.2, medidasCaseiras: ['1 Unidade pequena']),
-    Alimento(nome: 'Mamão Papaia', porcaoBase: '100g', calorias: 46, carbos: 11.6, proteinas: 0.5, gorduras: 0.1, medidasCaseiras: ['Metade de uma unidade']),
-    Alimento(nome: 'Leite Integral Fluidificado', porcaoBase: '200ml', calorias: 120, carbos: 10.0, proteinas: 6.0, gorduras: 6.7, medidasCaseiras: ['1 Copo americano']),
-    Alimento(nome: 'Leite Desnatado Fluidificado', porcaoBase: '200ml', calorias: 70, carbos: 10.0, proteinas: 6.0, gorduras: 0.0, medidasCaseiras: ['1 Copo americano']),
-    Alimento(nome: 'Queijo Muçarela', porcaoBase: '30g', calorias: 96, carbos: 0.9, proteinas: 7.0, gorduras: 7.3, medidasCaseiras: ['1 Fatia fina']),
-    Alimento(nome: 'Queijo Minas Frescal', porcaoBase: '30g', calorias: 68, carbos: 1.0, proteinas: 5.2, gorduras: 5.0, medidasCaseiras: ['1 Fatia média']),
-    Alimento(nome: 'Aveia em Flocos', porcaoBase: '30g', calorias: 112, carbos: 17.0, proteinas: 4.3, gorduras: 2.2, medidasCaseiras: ['2 Colheres de sopa']),
-    Alimento(nome: 'Whey Protein Concentrado', porcaoBase: '30g', calorias: 120, carbos: 3.0, proteinas: 24.0, gorduras: 2.0, medidasCaseiras: ['1 Dosador cheio']),
-    Alimento(nome: 'Pasta de Amendoim', porcaoBase: '15g', calorias: 90, carbos: 3.2, proteinas: 3.7, gorduras: 7.4, medidasCaseiras: ['1 Colher de sopa']),
-    Alimento(nome: 'Biscoito Recheado Chocolate', porcaoBase: '30g', calorias: 145, carbos: 21.0, proteinas: 1.8, gorduras: 6.0, isProcessado: true, alertaProcessado: 'Açúcares refinados e gordura hidrogenada.', medidasCaseiras: ['3 Unidades']),
+  final TextEditingController _buscaController = TextEditingController();
+  Timer? _debounce;
+  bool _buscandoNaNuvem = false;
+
+  // 📝 Lista Local Rápida (Sempre aparece antes de pesquisar)
+  List<Map<String, dynamic>> _resultados = [
+    {'nome': 'Arroz Branco Cozido', 'marca': 'Caseiro', 'kcal': 130, 'carbos': 28.0, 'proteinas': 2.0, 'gorduras': 0.0, 'porcao': '100g'},
+    {'nome': 'Feijão Carioca Cozido', 'marca': 'Caseiro', 'kcal': 76, 'carbos': 14.0, 'proteinas': 4.0, 'gorduras': 0.0, 'porcao': '100g'},
+    {'nome': 'Peito de Frango Grelhado', 'marca': 'Caseiro', 'kcal': 165, 'carbos': 0.0, 'proteinas': 31.0, 'gorduras': 3.0, 'porcao': '100g'},
+    {'nome': 'Ovo Cozido', 'marca': 'Granja', 'kcal': 78, 'carbos': 0.0, 'proteinas': 6.0, 'gorduras': 5.0, 'porcao': '1 Unidade (50g)'},
+    {'nome': 'Banana Prata', 'marca': 'In Natura', 'kcal': 89, 'carbos': 23.0, 'proteinas': 1.0, 'gorduras': 0.0, 'porcao': '1 Unidade (100g)'},
   ];
 
-  List<Alimento> _resultados = [];
-
   @override
-  void initState() {
-    super.initState();
-    _resultados = _bancoDeAlimentos;
+  void dispose() {
+    _debounce?.cancel();
+    _buscaController.dispose();
+    super.dispose();
   }
 
-  void _filtrarAlimentos(String query) {
-    setState(() {
-      if (query.isEmpty) {
-        _resultados = _bancoDeAlimentos;
-      } else {
-        _resultados = _bancoDeAlimentos.where((a) => a.nome.toLowerCase().contains(query.toLowerCase())).toList();
+  // 🌐 MOTOR DE BUSCA GLOBAL (OPEN FOOD FACTS)
+  void _pesquisarAlimento(String query) {
+    if (_debounce?.isActive ?? false) _debounce!.cancel();
+    
+    // Espera o usuário parar de digitar por 800ms antes de chamar a internet
+    _debounce = Timer(const Duration(milliseconds: 800), () async {
+      if (query.trim().isEmpty) {
+        setState(() => _buscandoNaNuvem = false);
+        return; // Mostra a lista local de novo se apagar a busca
+      }
+
+      setState(() => _buscandoNaNuvem = true);
+
+      try {
+        final url = Uri.parse('https://world.openfoodfacts.org/cgi/search.pl?search_terms=${Uri.encodeComponent(query)}&search_simple=1&action=process&json=1&page_size=15');
+        final resposta = await http.get(url);
+
+        if (resposta.statusCode == 200) {
+          final dados = jsonDecode(resposta.body);
+          final produtosExtraidos = dados['products'] as List;
+
+          List<Map<String, dynamic>> novosResultados = [];
+
+          for (var p in produtosExtraidos) {
+            final nutrients = p['nutriments'] ?? {};
+
+            double obterValorSeguro(String chave) {
+              final valor = nutrients[chave];
+              if (valor == null) return 0.0;
+              if (valor is num) return valor.toDouble();
+              if (valor is String) return double.tryParse(valor) ?? 0.0;
+              return 0.0;
+            }
+
+            final double kcal = obterValorSeguro('energy-kcal_100g');
+            // Só adiciona se tiver informação calórica válida
+            if (kcal > 0) {
+              novosResultados.add({
+                'nome': p['product_name_pt'] ?? p['product_name'] ?? 'Produto',
+                'marca': p['brands']?.split(',').first ?? 'Industrializado',
+                'kcal': kcal.toInt(),
+                'carbos': obterValorSeguro('carbohydrates_100g'),
+                'proteinas': obterValorSeguro('proteins_100g'),
+                'gorduras': obterValorSeguro('fat_100g'),
+                'porcao': '100g/ml (Base API)',
+              });
+            }
+          }
+
+          if (mounted) {
+            setState(() {
+              _resultados = novosResultados;
+              _buscandoNaNuvem = false;
+            });
+          }
+        }
+      } catch (e) {
+        debugPrint('Erro na busca: $e');
+        if (mounted) setState(() => _buscandoNaNuvem = false);
       }
     });
   }
 
-  void _abrirSeletorDePorcao(Alimento alimento) {
+  // 📝 PAINEL DE AJUSTE DE PORÇÃO (Idêntico ao do Leitor de Código de Barras)
+  void _mostrarPainelDeConfirmacao(Map<String, dynamic> produto) {
+    TextEditingController kcalController = TextEditingController(text: produto['kcal'].toString());
+    TextEditingController porcaoController = TextEditingController(text: '1.0');
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _ConstruirBottomSheetPorcao(alimento: alimento, turno: widget.turno),
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+          top: 24, left: 24, right: 24
+        ),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Confirmar Alimento 🔍', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+            const SizedBox(height: 8),
+            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Valores baseados em: ${produto['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+            
+            const SizedBox(height: 24),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: kcalController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Calorias (kcal)',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.primarySage)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: porcaoController,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    decoration: InputDecoration(
+                      labelText: 'Multiplicador',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.primarySage)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            
+            const SizedBox(height: 24),
+            
+            Row(
+              children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
+                  ),
+                ),
+                Expanded(
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primarySage,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
+                    ),
+                    onPressed: () => _salvarNoDiario(produto, kcalController.text, porcaoController.text),
+                    child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
     );
+  }
+
+  // 💾 SALVA NO FIREBASE
+  void _salvarNoDiario(Map<String, dynamic> produtoBase, String kcalDigitada, String multiplicadorDigitado) async {
+    final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+    final agora = DateTime.now();
+    final dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
+
+    int kcalFinal = int.tryParse(kcalDigitada) ?? produtoBase['kcal'];
+    double multiplicador = double.tryParse(multiplicadorDigitado.replaceAll(',', '.')) ?? 1.0;
+    
+    int caloriasTotais = (kcalFinal * multiplicador).toInt();
+    double carbosTotais = produtoBase['carbos'] * multiplicador;
+    double proteinasTotais = produtoBase['proteinas'] * multiplicador;
+    double gordurasTotais = produtoBase['gorduras'] * multiplicador;
+
+    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataHoje);
+
+    await docRef.set({
+      'calorias_consumidas': FieldValue.increment(caloriasTotais),
+      'carbos_consumidos': FieldValue.increment(carbosTotais),
+      'proteinas_consumidos': FieldValue.increment(proteinasTotais),
+      'gorduras_consumidos': FieldValue.increment(gordurasTotais),
+      'historico_alimentos': FieldValue.arrayUnion([
+        {
+          'nome': "${produtoBase['nome']} (${produtoBase['marca']})",
+          'turno': widget.turno,
+          'quantidade': multiplicador,
+          'medida_escolhida': produtoBase['porcao'],
+          'calorias': caloriasTotais,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+        }
+      ])
+    }, SetOptions(merge: true));
+
+    if (mounted) {
+      Navigator.pop(context); // Fecha o dialog
+      Navigator.pop(context); // Volta pro diário
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚡ Adicionado ao ${widget.turno}!'), backgroundColor: AppColors.primarySage));
+    }
   }
 
   @override
@@ -98,233 +231,94 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: Text('Adicionar ao ${widget.turno}'),
+        title: Text('Adicionar ao ${widget.turno}', style: const TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
+          // BARRA DE PESQUISA & SCANNER
           Container(
+            padding: const EdgeInsets.all(16),
             color: AppColors.primarySage,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
-                    controller: _searchController,
-                    onChanged: _filtrarAlimentos,
-                    style: const TextStyle(color: AppColors.textDark),
+                    controller: _buscaController,
+                    onChanged: _pesquisarAlimento,
                     decoration: InputDecoration(
-                      hintText: 'Buscar alimento...',
-                      hintStyle: TextStyle(color: Colors.grey.shade600),
-                      prefixIcon: const Icon(Icons.search, color: AppColors.primarySage),
+                      hintText: 'Buscar alimento (ex: Danone)...',
+                      prefixIcon: const Icon(Icons.search, color: Colors.grey),
                       filled: true,
-                      fillColor: AppColors.backgroundCreme,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Container(
-                  decoration: BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.circular(12)),
-                  child: IconButton(
-                    icon: const Icon(Icons.qr_code_scanner_rounded, color: AppColors.primarySage),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => BarcodeScannerScreen(turno: widget.turno)),
-                      );
-                    },
+                const SizedBox(width: 12),
+                InkWell(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => BarcodeScannerScreen(turno: widget.turno))),
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.qr_code_scanner, color: AppColors.primarySage),
                   ),
-                ),
+                )
               ],
             ),
           ),
+
+          // LISTA DE RESULTADOS
           Expanded(
-            child: _resultados.isEmpty
-                ? const Center(child: Text('Nenhum alimento encontrado.', style: TextStyle(color: Colors.grey, fontSize: 16)))
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: _resultados.length,
-                    itemBuilder: (context, index) {
-                      final alimento = _resultados[index];
-                      return _CardAlimentoPremium(alimento: alimento, onTap: () => _abrirSeletorDePorcao(alimento));
-                    },
-                  ),
+            child: _buscandoNaNuvem
+                ? const Center(child: CircularProgressIndicator(color: AppColors.primarySage))
+                : _resultados.isEmpty
+                    ? Center(child: Text('Nenhum alimento encontrado.', style: TextStyle(color: Colors.grey.shade500)))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _resultados.length,
+                        itemBuilder: (context, index) {
+                          final item = _resultados[index];
+                          return GestureDetector(
+                            onTap: () => _mostrarPainelDeConfirmacao(item),
+                            child: Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200)),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(item['nome'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                        const SizedBox(height: 4),
+                                        Text('${item['marca']} • ${item['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                                        const SizedBox(height: 8),
+                                        Text('C: ${item['carbos'].toInt()}g  |  P: ${item['proteinas'].toInt()}g  |  G: ${item['gorduras'].toInt()}g', style: const TextStyle(fontSize: 11, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text('${item['kcal']} kcal', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.accentPeach)),
+                                      const SizedBox(height: 8),
+                                      const Icon(Icons.add_circle, color: AppColors.primarySage, size: 28),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CardAlimentoPremium extends StatelessWidget {
-  final Alimento alimento;
-  final VoidCallback onTap;
-  const _CardAlimentoPremium({required this.alimento, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation: 1,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text(alimento.nome, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark))),
-                  Text('${alimento.calorias} kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  Text('Base: ${alimento.porcaoBase}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-                  const SizedBox(width: 12),
-                  Text('C: ${alimento.carbos.toInt()}g', style: const TextStyle(color: AppColors.secondaryMenta, fontSize: 12, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  Text('P: ${alimento.proteinas.toInt()}g', style: const TextStyle(color: AppColors.primarySage, fontSize: 12, fontWeight: FontWeight.w600)),
-                  const SizedBox(width: 8),
-                  Text('G: ${alimento.gorduras.toInt()}g', style: const TextStyle(color: AppColors.accentPeach, fontSize: 12, fontWeight: FontWeight.w600)),
-                ],
-              ),
-              if (alimento.isProcessado) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(color: AppColors.accentPeach.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.warning_amber_rounded, size: 14, color: AppColors.accentPeach),
-                      const SizedBox(width: 6),
-                      Expanded(child: Text(alimento.alertaProcessado, style: const TextStyle(fontSize: 11, color: AppColors.accentPeach, fontWeight: FontWeight.bold))),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ConstruirBottomSheetPorcao extends StatefulWidget {
-  final Alimento alimento;
-  final String turno;
-  const _ConstruirBottomSheetPorcao({required this.alimento, required this.turno});
-
-  @override
-  State<_ConstruirBottomSheetPorcao> createState() => _ConstruirBottomSheetPorcaoState();
-}
-
-class _ConstruirBottomSheetPorcaoState extends State<_ConstruirBottomSheetPorcao> {
-  String? _medidaSelecionada;
-  double _quantidade = 1.0;
-
-  @override
-  void initState() {
-    super.initState();
-    if (widget.alimento.medidasCaseiras.isNotEmpty) {
-      _medidaSelecionada = widget.alimento.medidasCaseiras.first;
-    }
-  }
-
-  void _salvarNoDiario() async {
-    final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
-    final agora = DateTime.now();
-    final dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
-
-    double fator = _quantidade;
-    int kcalCalculadas = (widget.alimento.calorias * fator).round();
-    double carbosCalculados = widget.alimento.carbos * fator;
-    double proteinasCalculadas = widget.alimento.proteinas * fator;
-    double gordurasCalculadas = widget.alimento.gorduras * fator;
-
-    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataHoje);
-
-    await docRef.set({
-      'calorias_consumidas': FieldValue.increment(kcalCalculadas),
-      'carbos_consumidos': FieldValue.increment(carbosCalculados),
-      'proteinas_consumidos': FieldValue.increment(proteinasCalculadas),
-      'gorduras_consumidos': FieldValue.increment(gordurasCalculadas),
-      'historico_alimentos': FieldValue.arrayUnion([
-        {
-          'nome': widget.alimento.nome,
-          'turno': widget.turno,
-          'quantidade': _quantidade,
-          'medida_escolhida': _medidaSelecionada,
-          'calorias': kcalCalculadas,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }
-      ])
-    }, SetOptions(merge: true));
-
-    if (mounted) {
-      Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${widget.alimento.nome} somado aos macros do dia!'), backgroundColor: AppColors.primarySage),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24.0),
-      decoration: const BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Center(child: Container(width: 40, height: 4, margin: const EdgeInsets.only(bottom: 24), decoration: BoxDecoration(color: Colors.grey.shade400, borderRadius: BorderRadius.circular(2)))),
-            Text(widget.alimento.nome, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage), textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            const Text('Multiplicador de Porção:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(onPressed: () { if (_quantidade > 0.5) { setState(() => _quantidade -= 0.5); } }, icon: const Icon(Icons.remove_circle_outline, size: 32, color: AppColors.primarySage)),
-                Padding(padding: const EdgeInsets.symmetric(horizontal: 24), child: Text(_quantidade.toString(), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark))),
-                IconButton(onPressed: () { setState(() => _quantidade += 0.5); }, icon: const Icon(Icons.add_circle_outline, size: 32, color: AppColors.primarySage)),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Text('Medida de Referência:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade300)),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _medidaSelecionada,
-                  isExpanded: true,
-                  icon: const Icon(Icons.arrow_drop_down, color: AppColors.primarySage),
-                  items: widget.alimento.medidasCaseiras.map((String medida) {
-                    return DropdownMenuItem<String>(value: medida, child: Text(medida, style: const TextStyle(color: AppColors.textDark)));
-                  }).toList(),
-                  onChanged: (String? novaMedida) { setState(() => _medidaSelecionada = novaMedida); },
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-            ElevatedButton(
-              onPressed: _salvarNoDiario,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: const Text('Adicionar ao Diário', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.backgroundCreme)),
-            ),
-          ],
-        ),
       ),
     );
   }
