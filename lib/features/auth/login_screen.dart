@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-import '../onboarding/onboarding_screen.dart';
-import 'custom_auth_service.dart';
+import '../../main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -11,225 +12,143 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _senhaController = TextEditingController();
-  final CustomAuthService _authService = CustomAuthService();
-  
-  bool _estaCarregando = false;
-  bool _ocultarSenha = true;
+  final TextEditingController _emailCtrl = TextEditingController();
+  final TextEditingController _senhaCtrl = TextEditingController();
+  bool _lembrarDeMim = true;
+  bool _carregando = false;
 
-  Future<void> _entrar() async {
-    final email = _emailController.text;
-    final senha = _senhaController.text;
+  @override
+  void initState() {
+    super.initState();
+    _verificarLoginSalvo();
+  }
 
-    if (email.isEmpty || senha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Por favor, preencha email e senha.'),
-          backgroundColor: AppColors.accentPeach,
-        ),
-      );
-      return;
-    }
+  // 🔄 Verifica se já existe um usuário logado salvo no celular
+  void _verificarLoginSalvo() async {
+    final prefs = await SharedPreferences.getInstance();
+    bool logado = prefs.getBool('usuario_logado') ?? false;
 
-    setState(() {
-      _estaCarregando = true;
-    });
-
-    try {
-      // Chama o nosso método de validação customizado no banco de dados
-      final String? userId = await _authService.realizarLogin(email, senha);
-
-      if (userId != null) {
-        // Login com sucesso! Mostra feedback e navega para o Onboarding
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Bem-vindo de volta ao Nutri Life! 🌿'),
-            backgroundColor: AppColors.secondaryMenta,
-          ),
-        );
-        
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
-      } else {
-        // Consulta retornou vazia
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Credenciais inválidas. Tente novamente.'),
-            backgroundColor: AppColors.accentPeach,
-          ),
-        );
-      }
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Erro de conexão: $e'),
-          backgroundColor: AppColors.accentPeach,
-        ),
-      );
-    } finally {
+    if (logado && FirebaseAuth.instance.currentUser != null) {
       if (mounted) {
-        setState(() {
-          _estaCarregando = false;
-        });
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     }
   }
 
-  // Função provisória para criar um usuário de teste caso o banco esteja vazio
-  Future<void> _criarContaTeste() async {
-    final email = _emailController.text;
-    final senha = _senhaController.text;
-    
-    if (email.isEmpty || senha.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Digite um email e senha para criar a conta teste.'),
-          backgroundColor: AppColors.accentPeach,
-        ),
-      );
-      return;
-    }
+  // 🔐 Função de Entrar
+  void _entrar() async {
+    if (_emailCtrl.text.isEmpty || _senhaCtrl.text.isEmpty) return;
+    setState(() => _carregando = true);
 
-    setState(() => _estaCarregando = true);
     try {
-      await _authService.registrarUsuario('Paciente Teste', email, senha);
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Conta criada! Agora clique em Entrar.'),
-          backgroundColor: AppColors.secondaryMenta,
-        ),
+      await FirebaseAuth.instance.signInWithEmailAndPassword(
+        email: _emailCtrl.text.trim(),
+        password: _senhaCtrl.text.trim(),
       );
+
+      if (_lembrarDeMim) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('usuario_logado', true);
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.red));
     } finally {
-      if (mounted) setState(() => _estaCarregando = false);
+      if (mounted) setState(() => _carregando = false);
+    }
+  }
+
+  // 🆕 Função de Criar Conta Nova
+  void _criarConta() async {
+    if (_emailCtrl.text.isEmpty || _senhaCtrl.text.isEmpty) return;
+    setState(() => _carregando = true);
+
+    try {
+      await FirebaseAuth.instance.createUserWithEmailAndPassword(
+        email: _emailCtrl.text.trim(),
+        password: _senhaCtrl.text.trim(),
+      );
+      
+      // Quando cria a conta, já entra automaticamente
+      if (_lembrarDeMim) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setBool('usuario_logado', true);
+      }
+
+      if (mounted) {
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
+      }
+    } on FirebaseAuthException catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.red));
+    } finally {
+      if (mounted) setState(() => _carregando = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.backgroundCreme,
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
+      backgroundColor: AppColors.primarySage,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Container(
             padding: const EdgeInsets.all(24.0),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24)),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(
-                  Icons.eco_rounded,
-                  size: 80,
-                  color: AppColors.primarySage,
-                ),
+                const Icon(Icons.eco, size: 60, color: AppColors.primarySage),
                 const SizedBox(height: 16),
-                const Text(
-                  'Nutri Life',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.textDark,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Sua jornada saudável começa aqui.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppColors.primarySage,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                
-                // Campo de Email
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: AppColors.textDark),
-                  decoration: InputDecoration(
-                    labelText: 'E-mail',
-                    prefixIcon: const Icon(Icons.email_outlined, color: AppColors.primarySage),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                // Campo de Senha
-                TextField(
-                  controller: _senhaController,
-                  obscureText: _ocultarSenha,
-                  style: const TextStyle(color: AppColors.textDark),
-                  decoration: InputDecoration(
-                    labelText: 'Senha',
-                    prefixIcon: const Icon(Icons.lock_outline, color: AppColors.primarySage),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _ocultarSenha ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _ocultarSenha = !_ocultarSenha;
-                        });
-                      },
-                    ),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
+                const Text('Nutri Life', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                 const SizedBox(height: 32),
                 
-                // Botão de Login
-                SizedBox(
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: _estaCarregando ? null : _entrar,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primarySage,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _estaCarregando
-                        ? const CircularProgressIndicator(color: Colors.white)
-                        : const Text(
-                            'Entrar',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.backgroundCreme,
-                            ),
-                          ),
-                  ),
+                TextField(
+                  controller: _emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(labelText: 'E-mail', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                 ),
-                
                 const SizedBox(height: 16),
                 
-                // Botão Provisório de Cadastro
-                TextButton(
-                  onPressed: _estaCarregando ? null : _criarContaTeste,
-                  child: const Text(
-                    'Primeiro acesso? Crie uma conta teste',
-                    style: TextStyle(color: AppColors.secondaryMenta),
-                  ),
+                TextField(
+                  controller: _senhaCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(labelText: 'Senha', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                 ),
+                const SizedBox(height: 8),
+
+                Row(
+                  children: [
+                    Checkbox(
+                      value: _lembrarDeMim,
+                      activeColor: AppColors.primarySage,
+                      onChanged: (valor) => setState(() => _lembrarDeMim = valor ?? true),
+                    ),
+                    const Text('Lembrar de mim', style: TextStyle(color: AppColors.textDark)),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                _carregando 
+                  ? const CircularProgressIndicator(color: AppColors.primarySage)
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                          onPressed: _entrar,
+                          child: const Text('Entrar', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: _criarConta,
+                          child: const Text('Criar Nova Conta', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                        )
+                      ],
+                    ),
               ],
             ),
           ),
