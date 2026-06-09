@@ -11,10 +11,9 @@ class GroceryListScreen extends StatefulWidget {
 }
 
 class _GroceryListScreenState extends State<GroceryListScreen> {
-  final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
   final TextEditingController _itemController = TextEditingController();
+  final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
 
-  // ➕ ADICIONAR ITEM NA LISTA
   void _adicionarItem() async {
     if (_itemController.text.trim().isEmpty) return;
 
@@ -25,14 +24,13 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
         .add({
       'nome': _itemController.text.trim(),
       'comprado': false,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
+      'timestamp': FieldValue.serverTimestamp(),
     });
 
     _itemController.clear();
   }
 
-  // ✅ MARCAR COMO COMPRADO
-  void _alternarStatusItem(String docId, bool statusAtual) async {
+  void _alternarStatus(String docId, bool statusAtual) async {
     await FirebaseFirestore.instance
         .collection('usuarios')
         .doc(_userId)
@@ -41,7 +39,6 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
         .update({'comprado': !statusAtual});
   }
 
-  // 🗑️ DELETAR ITEM
   void _deletarItem(String docId) async {
     await FirebaseFirestore.instance
         .collection('usuarios')
@@ -51,146 +48,72 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
         .delete();
   }
 
-  // 🍏 CONSULTAR DIETA DA NUTRI NO MERCADO
-  void _mostrarDietaPrescrita() async {
-    final doc = await FirebaseFirestore.instance.collection('usuarios').doc(_userId).get();
-    Map<String, dynamic> plano = {};
-    if (doc.exists && doc.data() != null) {
-      plano = doc.data()!['plano_alimentar'] ?? {};
-    }
-
-    if (mounted) {
-      showModalBottomSheet(
-        context: context,
-        backgroundColor: Colors.transparent,
-        isScrollControlled: true,
-        builder: (context) => Container(
-          height: MediaQuery.of(context).size.height * 0.7,
-          padding: const EdgeInsets.all(24),
-          decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Prescrição da Nutri 📝', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
-              const SizedBox(height: 8),
-              Text('Baseie suas compras nesta dieta:', style: TextStyle(color: Colors.grey.shade600)),
-              const SizedBox(height: 20),
-              Expanded(
-                child: ListView(
-                  children: [
-                    _blocoDieta('☕ Café da Manhã', plano['cafe']),
-                    _blocoDieta('☀️ Almoço', plano['almoco']),
-                    _blocoDieta('🍌 Lanche', plano['lanche']),
-                    _blocoDieta('🌙 Jantar', plano['jantar']),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context),
-                  style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-                  child: const Text('Fechar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ),
-              )
-            ],
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _blocoDieta(String titulo, String? texto) {
-    if (texto == null || texto.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(color: AppColors.backgroundCreme, borderRadius: BorderRadius.circular(12)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-            const SizedBox(height: 6),
-            Text(texto, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Lista de Compras'),
+        title: const Text('Lista de Compras', style: TextStyle(color: Colors.white)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.assignment_turned_in_rounded),
-            tooltip: 'Ver Dieta',
-            onPressed: _mostrarDietaPrescrita,
-          ),
-        ],
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Column(
         children: [
-          // CABEÇALHO DE INSERÇÃO
+          // BARRA DE ADICIONAR
           Container(
+            padding: const EdgeInsets.all(16),
             color: AppColors.primarySage,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
             child: Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: _itemController,
-                    style: const TextStyle(color: AppColors.textDark),
                     decoration: InputDecoration(
                       hintText: 'Adicionar produto (ex: Aveia)',
                       filled: true,
                       fillColor: Colors.white,
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                     ),
                     onSubmitted: (_) => _adicionarItem(),
                   ),
                 ),
                 const SizedBox(width: 12),
-                Container(
-                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                  child: IconButton(
-                    icon: const Icon(Icons.add_shopping_cart, color: AppColors.primarySage),
-                    onPressed: _adicionarItem,
+                InkWell(
+                  onTap: _adicionarItem,
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.add_shopping_cart, color: AppColors.primarySage),
                   ),
-                ),
+                )
               ],
             ),
           ),
-          
-          // LISTA REATIVA DO FIREBASE
+
+          // LISTA DO FIREBASE
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('usuarios')
                   .doc(_userId)
                   .collection('lista_compras')
-                  .orderBy('comprado') // Ordena: falsos (pendentes) primeiro
                   .orderBy('timestamp', descending: true)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: AppColors.primarySage));
-                
-                final itens = snapshot.data!.docs;
-                if (itens.isEmpty) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator(color: AppColors.primarySage));
+                }
+
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                   return Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.grey.shade300),
                         const SizedBox(height: 16),
-                        Text('Sua lista está vazia.', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
+                        Text('Sua lista está vazia', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
                       ],
                     ),
                   );
@@ -198,41 +121,33 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
 
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
-                  itemCount: itens.length,
+                  itemCount: snapshot.data!.docs.length,
                   itemBuilder: (context, index) {
-                    final item = itens[index];
-                    final bool comprado = item['comprado'];
-                    
-                    return Dismissible(
-                      key: Key(item.id),
-                      direction: DismissDirection.endToStart,
-                      background: Container(
-                        alignment: Alignment.centerRight,
-                        padding: const EdgeInsets.only(right: 20.0),
-                        decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.delete_outline, color: Colors.white),
-                      ),
-                      onDismissed: (_) => _deletarItem(item.id),
-                      child: Card(
-                        elevation: 0,
-                        margin: const EdgeInsets.only(bottom: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        color: comprado ? Colors.grey.shade200 : Colors.white,
-                        child: ListTile(
-                          leading: Checkbox(
-                            value: comprado,
-                            activeColor: AppColors.primarySage,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            onChanged: (_) => _alternarStatusItem(item.id, comprado),
+                    final doc = snapshot.data!.docs[index];
+                    final dados = doc.data() as Map<String, dynamic>;
+                    final bool comprado = dados['comprado'] ?? false;
+
+                    return Card(
+                      elevation: 0,
+                      margin: const EdgeInsets.only(bottom: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
+                      child: ListTile(
+                        leading: Checkbox(
+                          value: comprado,
+                          activeColor: AppColors.primarySage,
+                          onChanged: (_) => _alternarStatus(doc.id, comprado),
+                        ),
+                        title: Text(
+                          dados['nome'] ?? '',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: comprado ? Colors.grey : AppColors.textDark,
+                            decoration: comprado ? TextDecoration.lineThrough : null,
                           ),
-                          title: Text(
-                            item['nome'],
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: comprado ? Colors.grey.shade500 : AppColors.textDark,
-                              decoration: comprado ? TextDecoration.lineThrough : null,
-                            ),
-                          ),
+                        ),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
+                          onPressed: () => _deletarItem(doc.id),
                         ),
                       ),
                     );
