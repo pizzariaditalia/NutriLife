@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
-// 🚀 CORREÇÃO 1: Importação absoluta (acha o arquivo em qualquer lugar)
-import 'package:nutri_life/main_navigation_screen.dart';
+// 🚀 CORREÇÃO DEFINITIVA: Apontando para a pasta correta (patient_hub)
+import '../patient_hub/main_navigation_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -30,8 +30,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (logado && FirebaseAuth.instance.currentUser != null) {
       if (mounted) {
-        // 🚀 CORREÇÃO 2: Sem o 'const', garantindo a compilação lisa
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     }
   }
@@ -52,7 +51,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.red));
@@ -77,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
 
       if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => MainNavigationScreen()));
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
       }
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.red));
