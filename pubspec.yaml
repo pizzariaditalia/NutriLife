@@ -12,7 +12,8 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
-  mobile_scanner: ^5.0.0 # 📸 O motor de câmera real de alta velocidade
+  mobile_scanner: ^5.0.0 
+  http: ^1.2.0 # 🌐 O motor de conexão com APIs externas da internet
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
