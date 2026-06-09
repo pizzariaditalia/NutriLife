@@ -28,19 +28,17 @@ jobs:
       - name: Gerar Motor Android Básico
         run: |
           flutter create --platforms android --project-name nutri_life temp_app
-          # Limpa qualquer resquício antigo e move o motor novo gerado
           rm -rf android
           mv temp_app/android .
           rm -rf temp_app
-          # Garante que o SDK mínimo seja 23 (Exigência do Firebase)
-          echo "flutter.minSdkVersion=23" >> android/local.properties
+          # 🚀 O GOLPE FINAL: Exigir API 26 anula a necessidade de Desugaring!
+          echo "flutter.minSdkVersion=26" >> android/local.properties
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
 
       - name: Construir o APK (Release)
         run: |
-          # Trava de segurança: Instala a ferramenta manualmente antes do Gradle agir
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager "build-tools;30.0.3"
           flutter build apk --release
 
