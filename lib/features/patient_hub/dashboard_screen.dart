@@ -5,7 +5,8 @@ import '../../core/theme/app_colors.dart';
 import 'profile_screen.dart';
 import 'fasting_screen.dart';
 import 'grocery_list_screen.dart';
-import 'evolution_gallery_screen.dart'; // NOVO IMPORT
+import 'evolution_gallery_screen.dart';
+import 'habits_screen.dart'; // NOVO IMPORT
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({Key? key}) : super(key: key);
@@ -137,7 +138,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const Text('Ferramentas Premium', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                 const SizedBox(height: 16),
                 
-                // NOVO CARD: ACESSO À GALERIA DE FOTOS NO TOPO
                 GestureDetector(
                   onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const EvolutionGalleryScreen())),
                   child: Container(
@@ -169,6 +169,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Expanded(child: _construirCardTool(Icons.shopping_cart_outlined, 'Compras', 'Lista Inteligente', AppColors.secondaryMenta, () => Navigator.push(context, MaterialPageRoute(builder: (context) => const GroceryListScreen())))),
                   ],
                 ),
+                const SizedBox(height: 16),
+
+                // 🔔 NOVO BOTÃO DE ALERTAS DO PROJETO NA BASE DA GRADE
+                GestureDetector(
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HabitsScreen())),
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(color: AppColors.primarySage, borderRadius: BorderRadius.circular(20)),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: const [
+                        Icon(Icons.notification_add_rounded, color: Colors.white, size: 22),
+                        SizedBox(width: 12),
+                        Text('Ativar Lembretes da Rotina 🔔', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 32),
               ],
             ),
@@ -184,7 +202,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(color: const Color(0xFF1E2126), borderRadius: BorderRadius.circular(20)),
-        child: Column( crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column( col: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [Icon(icone, color: cor, size: 32), const SizedBox(height: 12), Text(titulo, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 12))],
         ),
       ),
@@ -192,7 +211,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// Manter classes auxiliares _ConstruirCardCaloriasPremium, _ConstruirCardAguaGamificado idênticas...
 class _ConstruirCardCaloriasPremium extends StatelessWidget {
   final int consumido, meta, restante;
   final double carbos, proteinas, gorduras;
