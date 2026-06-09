@@ -12,8 +12,11 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_auth: any
-  mobile_scanner: ^5.0.0 
-  http: ^1.2.0 # 🌐 O motor de conexão com APIs externas da internet
+  # 📸 Bibliotecas para o Módulo de Mídia (Antes e Depois)
+  firebase_storage: any # Armazena as fotos pesadas na nuvem
+  image_picker: ^1.0.4  # Abre a câmera e a galeria do celular
+  http: any
+  mobile_scanner: any
   cupertino_icons: ^1.0.6
 
 dev_dependencies:
