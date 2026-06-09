@@ -31,6 +31,8 @@ jobs:
           flutter create --platforms android --project-name nutri_life temp_app
           cp -r temp_app/android ./android
           rm -rf temp_app
+cp google-services.json android/app/
+
           
           # 🟢 AJUSTE CIRÚRGICO: Mudamos de 21 para 23 para o Firebase Auth aceitar!
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 23/g' android/app/build.gradle
