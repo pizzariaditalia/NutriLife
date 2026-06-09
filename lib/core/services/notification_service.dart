@@ -1,10 +1,14 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _plugin = FlutterLocalNotificationsPlugin();
 
-  // 🔌 INICIALIZAÇÃO: Configura o suporte de alertas no Android
   static Future<void> inicializar() async {
+    // ✅ Inicializa os fusos horários exigidos pela v17
+    tz.initializeTimeZones(); 
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -15,7 +19,6 @@ class NotificationService {
     await _plugin.initialize(initializationSettings);
   }
 
-  // ⏰ AGENDA LEMBRETE DIÁRIO RECORRENTE
   static Future<void> agendarAlarmeDiario({
     required int id,
     required String titulo,
@@ -23,24 +26,35 @@ class NotificationService {
     required int hora,
     required int minuto,
   }) async {
-    // Nota: Como o robô compila em release pura, usamos o canal padrão atómico do Android
-    await _plugin.showDailyAtTime(
+    // ✅ Nova lógica de agendamento usando zonedSchedule
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduledDate = tz.TZDateTime(tz.local, now.year, now.month, now.day, hora, minuto);
+    
+    // Se a hora de hoje já passou, agenda para amanhã
+    if (scheduledDate.isBefore(now)) {
+      scheduledDate = scheduledDate.add(const Duration(days: 1));
+    }
+
+    await _plugin.zonedSchedule(
       id,
       titulo,
       corpo,
-      Time(hora, minuto, 0),
-      const AndroidNotificationDetails(
-        'nutrilife_reminders',
-        'Lembretes Nutri Life',
-        channelDescription: 'Alarmes de dieta e hidratação do paciente',
-        importance: Importance.max,
-        priority: Priority.high,
-        playSound: true,
+      scheduledDate,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'nutrilife_reminders',
+          'Lembretes Nutri Life',
+          channelDescription: 'Alarmes de dieta e hidratação do paciente',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        ),
       ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      matchDateTimeComponents: DateTimeComponents.time,
     );
   }
 
-  // ❌ CANCELA TODOS OS ALARMES
   static Future<void> cancelarTodosOsAlarmes() async {
     await _plugin.cancelAll();
   }
