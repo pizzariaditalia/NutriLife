@@ -9,7 +9,6 @@ import 'package:nutri_life/features/patient_hub/evolution_gallery_screen.dart';
 import 'package:nutri_life/features/patient_hub/habits_screen.dart';
 import 'package:nutri_life/features/patient_hub/bmi_stats_screen.dart';          
 import 'package:nutri_life/features/food_database/smart_recipes_screen.dart'; 
-// 🚀 NOVO IMPORT: Conecta a tela de Chat
 import 'package:nutri_life/features/chat/chat_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -101,7 +100,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: AppColors.primarySage,
         elevation: 0,
         actions: [
-          // 🚀 NOVO BOTÃO: Canal de chat direto com a Nutri
           IconButton(
             icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen())),
@@ -144,7 +142,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Foco: $objective 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                    // 🚀 CORRIGIDO: de $objective para $objetivo
+                    Text('Foco: $objetivo 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
                     
                     _construirMotorDeInsights(consumido, meta, queimado, objetivo),
@@ -266,7 +265,7 @@ class _CardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta),
-              _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
+              _macro('Proteínas', proteinas, objective == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
               _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach),
             ],
           ),
