@@ -31,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Registrar Peso Actual', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        title: const Text('Registrar Peso Atual', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
         content: TextField(
           controller: txtController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -156,17 +156,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     
                     _construirBotaoPeso(),
                     const SizedBox(height: 24),
-                    const Text('Ferramentas Premium', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                    const Text('Ferramentas de Acompanhamento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 16),
                     
-                    _construirCardReceitas(),
-                    const SizedBox(height: 16),
-
-                    Row(
+                    // 🚀 RETORNO DO GRID COMPLETO DE 6 BOTÕES
+                    GridView.count(
+                      crossAxisCount: 2,
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      childAspectRatio: 1.2,
                       children: [
-                        Expanded(child: _cardTool(Icons.timer_outlined, 'Jejum', 'Rastreador', AppColors.accentPeach, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FastingScreen())))),
-                        const SizedBox(width: 16),
-                        Expanded(child: _cardTool(Icons.shopping_cart_outlined, 'Compras', 'Lista', AppColors.secondaryMenta, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroceryListScreen())))),
+                        _cardTool(Icons.restaurant_menu, 'Receitas Fit', 'Cardápio Inteligente', AppColors.primarySage, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmartRecipesScreen()))),
+                        _cardTool(Icons.timer_outlined, 'Jejum Intermitente', 'Cronômetro', AppColors.accentPeach, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FastingScreen()))),
+                        _cardTool(Icons.shopping_cart_outlined, 'Lista de Compras', 'Organizador', AppColors.secondaryMenta, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroceryListScreen()))),
+                        _cardTool(Icons.collections_outlined, 'Fotos de Evolução', 'Galeria 3x3', Colors.blueAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EvolutionGalleryScreen()))),
+                        _cardTool(Icons.check_box_outlined, 'Rotina diária', 'Hábitos Fixos', Colors.purpleAccent, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const HabitsScreen()))),
+                        _cardTool(Icons.analytics_outlined, 'Estatísticas IMC', 'Histórico Clínico', Colors.teal, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BmiStatsScreen()))),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -187,27 +194,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Acesse para conferir seu IMC', style: TextStyle(fontSize: 12, color: Colors.grey))]),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Mantenha seu peso atualizado', style: TextStyle(fontSize: 12, color: Colors.grey))]),
           ElevatedButton(onPressed: () => _abrirDialogoRegistrarPeso(context), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage), child: const Text('Pesar', style: TextStyle(color: Colors.white))),
         ],
-      ),
-    );
-  }
-
-  Widget _construirCardReceitas() {
-    return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SmartRecipesScreen())),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
-        child: Row(
-          children: const [
-            Icon(Icons.restaurant_menu, color: AppColors.primarySage, size: 36),
-            SizedBox(width: 16),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('Receitas Fit (1 Clique)', style: TextStyle(color: AppColors.textDark, fontWeight: FontWeight.bold, fontSize: 16)), Text('Adicione refeições completas na hora', style: TextStyle(color: Colors.grey, fontSize: 12))])),
-            Icon(Icons.chevron_right, color: Colors.grey),
-          ],
-        ),
       ),
     );
   }
@@ -216,9 +205,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: action,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(color: const Color(0xFF1E2126), borderRadius: BorderRadius.circular(20)),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Icon(icone, color: cor, size: 32), const SizedBox(height: 12), Text(tit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)), Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 12))]),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icone, color: cor, size: 28),
+            const SizedBox(height: 8),
+            Text(tit, style: const TextStyle(color: Colors.white, grandmother: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11))
+          ]
+        ),
       ),
     );
   }
@@ -264,7 +262,6 @@ class _CardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta),
-              // 🚀 CORRIGIDO: de objective para objetivo
               _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
               _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach),
             ],
