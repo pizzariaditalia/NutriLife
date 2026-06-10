@@ -20,11 +20,21 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
-  bool _curtiuPostExemplo = false; // Estado simulado para o Feed
 
   String _getTodayDateKey() {
     final agora = DateTime.now();
     return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
+  }
+
+  // 💧 MOTOR DE HIDRATAÇÃO: Adiciona 250ml no Firebase
+  void _adicionarAgua() async {
+    final dataHoje = _getTodayDateKey();
+    await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(_userId)
+        .collection('diario')
+        .doc(dataHoje)
+        .set({'agua_consumida': FieldValue.increment(250)}, SetOptions(merge: true));
   }
 
   void _abrirDialogoRegistrarPeso(BuildContext context) {
@@ -61,30 +71,112 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _construirMotorDeInsights(int consumido, int meta, int queimado, String objetivo) {
-    String mensagem = "Tudo no caminho certo! Mantenha o foco na sua estratégia hoje. 🚀";
-    IconData icone = Icons.auto_awesome;
-    Color corTexto = AppColors.primarySage;
-
-    if (queimado > 0 && objetivo == 'Hipertrofia') {
-      mensagem = "Você queimou $queimado kcal treinando! Lembre-se de comer bem para garantir o ganho de massa. 💪";
-      icone = Icons.fitness_center;
-      corTexto = Colors.orangeAccent.shade700;
-    } else if (queimado > 0 && objetivo == 'Emagrecimento') {
-      mensagem = "Sensacional! Mais $queimado kcal gastas. Você acelerou o seu déficit calórico hoje! 🔥";
-      icone = Icons.local_fire_department;
-      corTexto = AppColors.accentPeach;
+  // ❤️ INTERATIVIDADE DO FEED: Sistema de Curtida Única por Usuário
+  void _alternarCurtidaPost(String postId, List<dynamic> curtidas) async {
+    final docRef = FirebaseFirestore.instance.collection('feed').doc(postId);
+    if (curtidas.contains(_userId)) {
+      await docRef.update({'curtidas': FieldValue.arrayRemove([_userId])});
+    } else {
+      await docRef.update({'curtidas': FieldValue.arrayUnion([_userId])});
     }
+  }
 
+  // 💬 INTERATIVIDADE DO FEED: Painel de Comentários em Tempo Real
+  void _abrirAbasComentarios(String postId) {
+    final commentCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => Container(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 20, left: 20, right: 20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Comentários 💬', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+            const SizedBox(height: 12),
+            Container(
+              constraints: const BoxConstraints(maxHeight: 250),
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('feed').doc(postId).collection('comentarios').orderBy('timestamp', descending: false).snapshots(),
+                builder: (context, snap) {
+                  if (!snap.hasData || snap.data!.docs.isEmpty) {
+                    return const Center(child: Padding(padding: EdgeInsets.all(16.0), child: Text('Seja o primeiro a comentar!', style: TextStyle(color: Colors.grey))));
+                  }
+                  return ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: snap.data!.docs.length,
+                    itemBuilder: (context, i) {
+                      final c = snap.data!.docs[i].data() as Map<String, dynamic>;
+                      return ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(c['autor'] ?? 'Paciente', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        subtitle: Text(c['texto'] ?? '', style: const TextStyle(color: AppColors.textDark)),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: commentCtrl,
+                      decoration: InputDecoration(hintText: 'Escreva um comentário...', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    icon: const Icon(Icons.send, color: AppColors.primarySage),
+                    onPressed: () async {
+                      if (commentCtrl.text.trim().isEmpty) return;
+                      await FirebaseFirestore.instance.collection('feed').doc(postId).collection('comentarios').add({
+                        'texto': commentCtrl.text.trim(),
+                        'autor': 'Paciente Ativo',
+                        'timestamp': FieldValue.serverTimestamp(),
+                      });
+                      commentCtrl.clear();
+                    },
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _construirRastreadorAgua(int consumido) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: corTexto.withOpacity(0.08), borderRadius: BorderRadius.circular(16)),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.shade100)),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Icon(icone, color: corTexto, size: 28),
-          const SizedBox(width: 12),
-          Expanded(child: Text(mensagem, style: TextStyle(color: corTexto, fontWeight: FontWeight.bold, fontSize: 13))),
+          Row(
+            children: [
+              const Icon(Icons.water_drop, color: Colors.blue, size: 32),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Hidratação Diária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                  Text('Você já bebeu $consumido ml hoje', style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
+          ),
+          ElevatedButton.icon(
+            onPressed: _adicionarAgua,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            icon: const Icon(Icons.add, color: Colors.white, size: 16),
+            label: const Text('+250ml', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          )
         ],
       ),
     );
@@ -102,7 +194,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
         if (userSnapshot.hasData && userSnapshot.data!.exists) {
           final dadosUser = userSnapshot.data!.data() as Map<String, dynamic>?;
-          objetivo = dadosUser?['objective'] ?? dadosUser?['objetivo'] ?? 'Emagrecimento';
+          objetivo = dadosUser?['objetivo'] ?? 'Emagrecimento';
           fotoPerfilUrl = dadosUser?['foto_perfil'];
         }
 
@@ -113,19 +205,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             backgroundColor: AppColors.primarySage,
             elevation: 0,
             actions: [
-              // 🚀 NOVO: Sino de Notificações Restaurado
               IconButton(
                 icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white),
-                onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhuma notificação nova no momento.🔔')));
-                },
+                onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhuma notificação nova. 🔔'))),
               ),
               IconButton(
                 icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen())),
               ),
               const SizedBox(width: 4),
-              // 🚀 NOVO: Foto real do paciente no lugar do boneco cinza
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
                 child: Padding(
@@ -143,7 +231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           body: StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).snapshots(),
             builder: (context, snapshot) {
-              int consumido = 0, meta = 2000, queimado = 0;
+              int consumido = 0, meta = 2000, queimado = 0, agua = 0;
               double carbos = 0, proteinas = 0, gorduras = 0;
 
               if (snapshot.hasData && snapshot.data!.exists) {
@@ -151,6 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 consumido = dados['calorias_consumidas'] ?? 0;
                 meta = dados['meta_calorias'] ?? (objetivo == 'Hipertrofia' ? 2600 : 2000);
                 queimado = dados['calorias_queimadas'] ?? 0;
+                agua = dados['agua_consumida'] ?? 0;
                 carbos = (dados['carbos_consumidos'] ?? 0).toDouble();
                 proteinas = (dados['proteinas_consumidos'] ?? 0).toDouble();
                 gorduras = (dados['gorduras_consumidos'] ?? 0).toDouble();
@@ -166,8 +255,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text('Foco: $objetivo 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
                     
-                    _construirMotorDeInsights(consumido, meta, queimado, objetivo),
-                    
                     _CardCaloriasPremium(
                       consumido: consumido, meta: meta, restante: restante, 
                       queimado: queimado, carbos: carbos, proteinas: proteinas, 
@@ -175,8 +262,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 24),
                     
+                    // 🚀 ORDEM CORRETA: Água posicionado acima do Peso (Pesar)
+                    _construirRastreadorAgua(agua),
                     _construirBotaoPeso(),
                     const SizedBox(height: 24),
+                    
                     const Text('Ferramentas de Acompanhamento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 16),
                     
@@ -198,11 +288,70 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 28),
 
-                    // 🚀 ESTRATÉGICO: Terreno do Feed de Conteúdos da Nutri
                     const Text('Feed da Comunidade 📣', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
-                    _construirCardFeedMockup(),
                     
+                    // 🚀 STREAM DO FEED REAL DO FIREBASE
+                    StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance.collection('feed').orderBy('timestamp', descending: true).snapshots(),
+                      builder: (context, feedSnap) {
+                        if (!feedSnap.hasData || feedSnap.data!.docs.isEmpty) {
+                          // Post de boas-vindas padrão enquanto a Nutri não posta nada na nuvem
+                          return _buildCardPostEstatico();
+                        }
+
+                        return Column(
+                          children: feedSnap.data!.docs.map((doc) {
+                            final post = doc.data() as Map<String, dynamic>;
+                            final List<dynamic> curtidas = post['curtidas'] ?? [];
+                            final bool euCurti = curtidas.contains(_userId);
+
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
+                                      const SizedBox(width: 12),
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(post['autor'] ?? 'Nutricionista 👑', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)),
+                                          const Text('Post Oficial', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                                        ],
+                                      )
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(post['texto'] ?? '', style: const TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)),
+                                  const SizedBox(height: 16),
+                                  const Divider(height: 1),
+                                  Row(
+                                    children: [
+                                      IconButton(
+                                        icon: Icon(euCurti ? Icons.favorite : Icons.favorite_border, color: euCurti ? Colors.red : Colors.grey),
+                                        onPressed: () => _alternarCurtidaPost(doc.id, curtidas),
+                                      ),
+                                      Text('${curtidas.length} curtidas', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                                      const SizedBox(width: 24),
+                                      IconButton(
+                                        icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
+                                        onPressed: () => _abrirAbasComentarios(doc.id),
+                                      ),
+                                      const Text('Comentar', style: TextStyle(color: Colors.grey, fontSize: 12)),
+                                    ],
+                                  )
+                                ],
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 32),
                   ],
                 ),
@@ -211,6 +360,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildCardPostEstatico() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Nutricionista Ana Silva 👑', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)), Text('Canal de Dicas', style: TextStyle(color: Colors.grey, fontSize: 11))])
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text('Bem-vindo ao Feed Oficial! Fique atento, aqui postarei atualizações, artigos de performance e orientações exclusivas sobre nutrição clínica e esportiva.', style: TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          Row(
+            children: [
+              IconButton(icon: const Icon(Icons.favorite_border, color: Colors.grey), onPressed: () {}),
+              const Text('0 curtidas', style: TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(width: 24),
+              IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22), onPressed: () {}),
+              const Text('0 comentários', style: TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
+          )
+        ],
+      ),
     );
   }
 
@@ -223,52 +404,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Mantenha seu peso atualizado', style: TextStyle(fontSize: 12, color: Colors.grey))]),
           ElevatedButton(onPressed: () => _abrirDialogoRegistrarPeso(context), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage), child: const Text('Pesar', style: TextStyle(color: Colors.white))),
-        ],
-      ),
-    );
-  }
-
-  Widget _construirCardFeedMockup() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
-                  Text('Nutricionista Ana Silva 👑', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)),
-                  Text('Postado há 2 horas', style: TextStyle(color: Colors.grey, fontSize: 11)),
-                ],
-              )
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Dica de ouro para quem está no foco de Hipertrofia ou Emagrecimento: O consumo estratégico de água gelada antes dos treinos ajuda na regulação térmica e aumenta a performance metabólica em até 12%. Não pulem a hidratação!',
-            style: TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4),
-          ),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              IconButton(
-                icon: Icon(_curtiuPostExemplo ? Icons.favorite : Icons.favorite_border, color: _curtiuPostExemplo ? Colors.red : Colors.grey),
-                onPressed: () => setState(() => _curtiuPostExemplo = !_curtiuPostExemplo),
-              ),
-              Text('24 curtidas', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-              const SizedBox(width: 24),
-              const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
-              const SizedBox(width: 6),
-              Text('5 comentários', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
-            ],
-          )
         ],
       ),
     );
@@ -317,9 +452,7 @@ class _CardCaloriasPremium extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  Navigator.of(context) != null 
-                  ? SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage))
-                  : const SizedBox(),
+                  SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage)),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
