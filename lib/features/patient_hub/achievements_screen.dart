@@ -36,15 +36,18 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
             stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('galeria').doc('fotos_atuais').snapshots(),
             builder: (context, galeriaSnapshot) {
               
-              // 🕹️ REGRAS DE GAMIFICAÇÃO
+              int consumido = 0;
               bool jaComeuHoje = false;
               bool jaTreinouHoje = false;
               bool temFotosDaJornada = false;
+              bool monstroDasProteinas = false;
 
               if (diarioSnapshot.hasData && diarioSnapshot.data!.exists) {
                 final dadosDiario = diarioSnapshot.data!.data() as Map<String, dynamic>?;
-                jaComeuHoje = (dadosDiario?['calorias_consumidas'] ?? 0) > 0;
+                consumido = dadosDiario?['calorias_consumidas'] ?? 0;
+                jaComeuHoje = consumido > 0;
                 jaTreinouHoje = (dadosDiario?['calorias_queimadas'] ?? 0) > 0;
+                monstroDasProteinas = (dadosDiario?['proteinas_consumidos'] ?? 0) >= 100;
               }
 
               if (galeriaSnapshot.hasData && galeriaSnapshot.data!.exists) {
@@ -57,30 +60,21 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
                 children: [
                   const Text('Mural de Conquistas 🏆', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                   const SizedBox(height: 6),
-                  Text('Bata suas metas diárias para colecionar insígnias de saúde.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  Text('Evolua sua rotina saudável para desbloquear todas.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                   const SizedBox(height: 32),
 
-                  _buildCardMedalha(
-                    'Foco no Objetivo',
-                    'Registrou o primeiro alimento no diário de refeições hoje.',
-                    Icons.restaurant,
-                    jaComeuHoje ? Colors.orange : Colors.grey.shade300,
-                    jaComeuHoje,
-                  ),
-                  _buildCardMedalha(
-                    'Estilo Strava',
-                    'Registrou uma corrida, pedalada ou musculação na central de treinos.',
-                    Icons.directions_run,
-                    jaTreinouHoje ? AppColors.accentPeach : Colors.grey.shade300,
-                    jaTreinouHoje,
-                  ),
-                  _buildCardMedalha(
-                    'Foco Visual',
-                    'Adicionou fotos de antes ou depois na galeria de evolução.',
-                    Icons.camera_alt,
-                    temFotosDaJornada ? AppColors.secondaryMenta : Colors.grey.shade300,
-                    temFotosDaJornada,
-                  ),
+                  _buildCardMedalha('Foco no Objetivo', 'Registrou o primeiro alimento no diário de refeições hoje.', Icons.restaurant, jaComeuHoje ? Colors.orange : Colors.grey.shade300, jaComeuHoje),
+                  _buildCardMedalha('Estilo Strava', 'Registrou uma corrida, pedalada ou musculação na central de treinos.', Icons.directions_run, jaTreinouHoje ? AppColors.accentPeach : Colors.grey.shade300, jaTreinouHoje),
+                  _buildCardMedalha('Foco Visual', 'Adicionou fotos de antes ou depois na galeria de evolução.', Icons.camera_alt, temFotosDaJornada ? AppColors.secondaryMenta : Colors.grey.shade300, temFotosDaJornada),
+                  
+                  // 🚀 NOVAS 7 CONQUISTAS SOLICITADAS
+                  _buildCardMedalha('Monstro do Whey', 'Bateu mais de 100g de proteína pura em um único dia.', Icons.fitness_center, monstroDasProteinas ? Colors.blue : Colors.grey.shade300, monstroDasProteinas),
+                  _buildCardMedalha('Mestre do Jejum', 'Concluiu o seu primeiro ciclo completo de Jejum Intermitente.', Icons.hourglass_top, Colors.grey.shade300, false),
+                  _buildCardMedalha('Paciente Dedicado', 'Enviou uma dúvida no chat em tempo real para a nutricionista.', Icons.quickreply, Colors.grey.shade300, false),
+                  _buildCardMedalha('Fidelidade Suprema', 'Abriu e atualizou o aplicativo por 7 dias seguidos.', Icons.workspace_premium, Colors.grey.shade300, false),
+                  _buildCardMedalha('Hidratação Perfeita', 'Completou a meta cheia de ingestão de água diária.', Icons.water_drop, Colors.grey.shade300, false),
+                  _buildCardMedalha('Chef Saudável', 'Criou e registrou uma receita customizada exclusiva própria.', Icons.blender, Colors.grey.shade300, false),
+                  _buildCardMedalha('Déficit Impecável', 'Manteve a risca as calorias abaixo da meta durante o dia.', Icons.trending_down, (consumido > 0 && consumido < 2000) ? Colors.teal : Colors.grey.shade300, (consumido > 0 && consumido < 2000)),
                 ],
               );
             },
@@ -94,30 +88,16 @@ class _AchievementsScreenState extends State<AchievementsScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.grey.shade100),
-      ),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
       child: Row(
         children: [
-          CircleAvatar(
-            radius: 30,
-            backgroundColor: corMedalha.withOpacity(0.15),
-            child: Icon(icone, color: corMedalha, size: 30),
-          ),
+          CircleAvatar(radius: 30, backgroundColor: corMedalha.withOpacity(0.15), child: Icon(icone, color: corMedalha, size: 30)),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)),
-                    const SizedBox(width: 6),
-                    if (desbloqueado) const Icon(Icons.verified, color: Colors.blue, size: 16),
-                  ],
-                ),
+                Row(children: [Text(titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)), const SizedBox(width: 6), if (desbloqueado) const Icon(Icons.verified, color: Colors.blue, size: 16)]),
                 const SizedBox(height: 4),
                 Text(desc, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
               ],
