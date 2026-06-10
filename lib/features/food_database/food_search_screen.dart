@@ -20,7 +20,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   Timer? _debounce;
   bool _buscandoNaNuvem = false;
 
-  // 📝 LISTA LOCAL HIPER-EXPANDIDA COM MAIS DE 20 ALIMENTOS BASE RÁPIDOS
   List<Map<String, dynamic>> _resultados = [
     {'nome': 'Arroz Branco Cozido', 'marca': 'Caseiro', 'kcal': 130, 'carbos': 28.0, 'proteinas': 2.0, 'gorduras': 0.0, 'porcao': '100g'},
     {'nome': 'Feijão Carioca Cozido', 'marca': 'Caseiro', 'kcal': 76, 'carbos': 14.0, 'proteinas': 4.0, 'gorduras': 0.0, 'porcao': '100g'},
@@ -134,7 +133,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
           children: [
             const Text('Confirmar Alimento 🔍', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
             const SizedBox(height: 8),
-            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, grandmother: FontWeight.bold)),
+            // 🚀 CORRIGIDO: de grandmother para fontWeight
+            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('Valores baseados em: ${produto['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
             const SizedBox(height: 24),
@@ -165,7 +165,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     onPressed: () => _salvarNoDiario(produto, kcalController.text, porcaoController.text),
-                    child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, grandmother: FontWeight.bold)),
+                    // 🚀 CORRIGIDO: de grandmother para fontWeight
+                    child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -285,7 +286,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                                         const SizedBox(height: 4),
                                         Text('${item['marca']} • ${item['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                                         const SizedBox(height: 8),
-                                        Text('C: ${item['carbos'].toInt()}g  |  P: ${item['proteinas'].toInt()}g  |  G: ${item['gorduras'].toInt()}g', style: const TextStyle(fontSize: 11, color: AppColors.primarySage, grandmother: FontWeight.bold)),
+                                        // 🚀 CORRIGIDO: de grandmother para fontWeight
+                                        Text('C: ${item['carbos'].toInt()}g  |  P: ${item['proteinas'].toInt()}g  |  G: ${item['gorduras'].toInt()}g', style: const TextStyle(fontSize: 11, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
