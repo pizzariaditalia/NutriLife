@@ -4,7 +4,7 @@ import 'package:nutri_life/features/patient_hub/dashboard_screen.dart';
 import 'package:nutri_life/features/patient_hub/meal_diary_screen.dart'; 
 import 'package:nutri_life/features/ai_assistant/ai_assistant_screen.dart';
 import 'package:nutri_life/features/patient_hub/workouts_screen.dart';
-import 'package:nutri_life/features/food_database/food_search_screen.dart';
+import 'package:nutri_life/features/patient_hub/achievements_screen.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({Key? key}) : super(key: key);
@@ -19,9 +19,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   final List<Widget> _telas = [
     const DashboardScreen(),
     const MealDiaryScreen(),
-    const AiAssistantScreen(), // 🧠 Centro: IA embutida de forma estável
+    const AiAssistantScreen(), 
     const WorkoutsScreen(), 
-    const FoodSearchScreen(turno: 'Geral'),
+    const AchievementsScreen(),
   ];
 
   @override
@@ -43,9 +43,9 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Painel'),
           BottomNavigationBarItem(icon: Icon(Icons.menu_book_outlined), activeIcon: Icon(Icons.menu_book), label: 'Diário'),
-          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'Assistente'), // ✨ Ícone do Gemini verde
+          BottomNavigationBarItem(icon: Icon(Icons.auto_awesome), label: 'Assistente'), 
           BottomNavigationBarItem(icon: Icon(Icons.fitness_center_outlined), activeIcon: Icon(Icons.fitness_center), label: 'Treinos'),
-          BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Alimentos'),
+          BottomNavigationBarItem(icon: Icon(Icons.emoji_events_outlined), activeIcon: Icon(Icons.emoji_events), label: 'Conquistas'),
         ],
       ),
     );
