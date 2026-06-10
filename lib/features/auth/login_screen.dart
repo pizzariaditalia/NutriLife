@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../patient_hub/main_navigation_screen.dart';
+import 'register_screen.dart'; // 🚀 NOVO IMPORT
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -55,33 +56,6 @@ class _LoginScreenState extends State<LoginScreen> {
     } on FirebaseAuthException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erro: ${e.message}'), backgroundColor: Colors.redAccent),
-      );
-    } finally {
-      if (mounted) setState(() => _carregando = false);
-    }
-  }
-
-  void _criarConta() async {
-    if (_emailCtrl.text.isEmpty || _senhaCtrl.text.isEmpty) return;
-    setState(() => _carregando = true);
-
-    try {
-      await FirebaseAuth.instance.createUserWithEmailAndPassword(
-        email: _emailCtrl.text.trim(),
-        password: _senhaCtrl.text.trim(),
-      );
-      
-      if (_lembrarDeMim) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setBool('usuario_logado', true);
-      }
-
-      if (mounted) {
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const MainNavigationScreen()));
-      }
-    } on FirebaseAuthException catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erro ao criar: ${e.message}'), backgroundColor: Colors.redAccent),
       );
     } finally {
       if (mounted) setState(() => _carregando = false);
@@ -167,7 +141,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextButton(
-                          onPressed: _criarConta,
+                          // 🚀 REDIRECIONAMENTO CORRETO: Abre o fluxo de onboarding completo
+                          onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
                           child: const Text('Criar Nova Conta', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 14)),
                         )
                       ],
