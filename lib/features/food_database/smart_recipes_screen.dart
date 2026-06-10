@@ -13,7 +13,6 @@ class SmartRecipesScreen extends StatefulWidget {
 class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
 
-  // 🔥 BANCO DE DADOS EXPANDIDO COM DEZENAS DE OPÇÕES PRONTAS POR OBJETIVO
   final List<Map<String, dynamic>> _todasReceitas = [
     // 🍏 EMAGRECIMENTO
     {'nome': 'Panqueca de Aveia', 'ingredientes': 'Ovos, Aveia, Banana e Canela', 'kcal': 250, 'c': 30.0, 'p': 15.0, 'g': 8.0, 'icone': Icons.breakfast_dining, 'objetivo_foco': 'Emagrecimento'},
@@ -37,7 +36,8 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
     // 🧬 SAÚDE & LONGEVIDADE
     {'nome': 'Bowl de Salmão e Abacate', 'ingredientes': 'Salmão Grelhado, Abacate, Arroz Integral', 'kcal': 450, 'c': 30.0, 'p': 35.0, 'g': 20.0, 'icone': Icons.set_meal, 'objetivo_foco': 'Saúde & Longevidade'},
     {'nome': 'Mix Antioxidante Funcional', 'ingredientes': 'Kefir, Mirtilo, Framboesa, Semente de Girassol', 'kcal': 190, 'c': 16.0, 'p': 8.0, 'g': 9.0, 'icone': Icons.local_pharmacy, 'objetivo_foco': 'Saúde & Longevidade'},
-    {'nome': 'Salada de Grão de Bico Viva', 'ingredientes': 'Grão de Bico, Tomate Cereja, Pepino, Azeite Extra Virgem', 'kcal': 260, 'c': 28.0, 'p': 11.0, 'g': 10.0, 'icone': Icons.salad, 'objetivo_foco': 'Saúde & Longevidade'},
+    // 🚀 CORRIGIDO: de Icons.salad para Icons.local_dining
+    {'nome': 'Salada de Grão de Bico Viva', 'ingredientes': 'Grão de Bico, Tomate Cereja, Pepino, Azeite Extra Virgem', 'kcal': 260, 'c': 28.0, 'p': 11.0, 'g': 10.0, 'icone': Icons.local_dining, 'objetivo_foco': 'Saúde & Longevidade'},
   ];
 
   void _consumirReceita(String nome, int kcal, double carbos, double prot, double gord) async {
@@ -141,9 +141,8 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
           final dadosUser = snapshot.data!.data() as Map<String, dynamic>?;
           final objetivoPaciente = dadosUser?['objetivo'] ?? 'Emagrecimento';
 
-          // Filtra exibindo receitas do objetivo + algumas genéricas para variedade
           final receitasFiltradas = _todasReceitas.where((r) => 
-            r['objetivo_foco'] == objetivoPaciente || r['objetivo_foco'] == 'Emagrecimento'
+            r['objective_foco'] == objetivoPaciente || r['objetivo_foco'] == 'Emagrecimento' || r['objetivo_foco'] == objetivoPaciente
           ).toList();
 
           return ListView(
