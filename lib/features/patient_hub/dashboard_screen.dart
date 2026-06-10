@@ -4,13 +4,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutri_life/core/theme/app_colors.dart';
 import 'package:nutri_life/features/patient_hub/profile_screen.dart';
 import 'package:nutri_life/features/patient_hub/fasting_screen.dart';
-import 'package:nutri_life/features/patient_hub/grocery_list_screen.dart';
+import 'package:nutri_life/features/grocery_list_screen.dart';
 import 'package:nutri_life/features/patient_hub/evolution_gallery_screen.dart';
 import 'package:nutri_life/features/patient_hub/habits_screen.dart';
 import 'package:nutri_life/features/patient_hub/bmi_stats_screen.dart';          
 import 'package:nutri_life/features/food_database/smart_recipes_screen.dart'; 
 import 'package:nutri_life/features/chat/chat_screen.dart';
-// 🚀 NOVO IMPORT: Conecta a busca de alimentos no topo do painel
 import 'package:nutri_life/features/food_database/food_search_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -22,6 +21,14 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+  
+  // Variáveis para fazer o Feed de teste funcionar na hora
+  bool _curtiuEstatico = false;
+  int _qtdCurtidasEstaticas = 24;
+  final List<String> _comentariosEstaticos = [
+    'Caraca, não sabia disso! Vou testar hoje.',
+    'Dica top demais, Ana!'
+  ];
 
   String _getTodayDateKey() {
     final agora = DateTime.now();
@@ -39,11 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('💧 Ótimo! +250ml de pura hidratação. Seu metabolismo agradece! 🚀'),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 2),
-        ),
+        const SnackBar(content: Text('💧 Ótimo! +250ml de pura hidratação. 🚀'), backgroundColor: Colors.blue),
       );
     }
   }
@@ -80,7 +83,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (context.mounted) {
                     Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('⚖️ Peso atualizado e registrado com sucesso!'), backgroundColor: AppColors.primarySage)
+                      const SnackBar(content: Text('⚖️ Peso atualizado!'), backgroundColor: AppColors.primarySage)
                     );
                   }
                 }
@@ -93,7 +96,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ❤️ CURTIDA REAL NO FEED DE NOTÍCIAS
   void _alternarCurtidaPost(String postId, List<dynamic> curtidas) async {
     final docRef = FirebaseFirestore.instance.collection('feed').doc(postId);
     if (curtidas.contains(_userId)) {
@@ -103,7 +105,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // 💬 COMENTÁRIOS REAIS DO PACIENTE NO POST
   void _abrirAbasComentarios(String postId) {
     final commentCtrl = TextEditingController();
     showModalBottomSheet(
@@ -172,32 +173,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _construirRastreadorAgua(int consumido) {
+  // 💬 COMENTÁRIOS DA POSTAGEM DE TESTE LOCAL
+  void _abrirComentariosEstaticos() {
+    final commentCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setModalState) => Container(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 20, left: 20, right: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Comentários do Post 💬', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+              const SizedBox(height: 12),
+              Container(
+                constraints: const BoxConstraints(maxHeight: 200),
+                child: ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: _comentariosEstaticos.length,
+                  itemBuilder: (context, i) {
+                    return ListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('Paciente Focado 💪', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      subtitle: Text(_comentariosEstaticos[i], style: const TextStyle(color: AppColors.textDark)),
+                    );
+                  },
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: commentCtrl,
+                        decoration: InputDecoration(hintText: 'Escreva seu comentário...', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.send, color: AppColors.primarySage),
+                      onPressed: () {
+                        if (commentCtrl.text.trim().isEmpty) return;
+                        setState(() {
+                          _comentariosEstaticos.add(commentCtrl.text.trim());
+                        });
+                        setModalState(() {}); // Atualiza o modal na hora
+                        commentCtrl.clear();
+                      },
+                    )
+                  ],
+                ),
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCardPostEstatico() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.shade100)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Icon(Icons.water_drop, color: Colors.blue, size: 32),
-              const SizedBox(width: 16),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Hidratação Diária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                  Text('Você já bebeu $consumido ml hoje', style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500)),
-                ],
-              ),
+              CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
+              const SizedBox(width: 12),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Nutricionista Ana Silva 👑', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)), Text('Canal de Dicas', style: TextStyle(color: Colors.grey, fontSize: 11))])
             ],
           ),
-          ElevatedButton.icon(
-            onPressed: _adicionarAgua,
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            icon: const Icon(Icons.add, color: Colors.white, size: 16),
-            label: const Text('+250ml', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          const Text('Dica de ouro: O consumo de água gelada antes dos treinos ajuda na regulação térmica e aumenta a performance metabólica em até 12%. Não pulem a hidratação!', style: TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          Row(
+            children: [
+              // 🚀 CORREÇÃO CURTIDA: Agora muda de estado e soma localmente na hora!
+              IconButton(
+                icon: Icon(_curtiuEstatico ? Icons.favorite : Icons.favorite_border, color: _curtiuEstatico ? Colors.red : Colors.grey),
+                onPressed: () {
+                  setState(() {
+                    _curtiuEstatico = !_curtiuEstatico;
+                    _qtdCurtidasEstaticas += _curtiuEstatico ? 1 : -1;
+                  });
+                },
+              ),
+              Text('$_qtdCurtidasEstaticas curtidas', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+              const SizedBox(width: 24),
+              // 🚀 CORREÇÃO COMENTÁRIO: Abre a caixa interativa funcional
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
+                onPressed: _abrirComentariosEstaticos,
+              ),
+              Text('${_comentariosEstaticos.length} comentários', style: const TextStyle(color: Colors.grey, fontSize: 12)),
+            ],
           )
         ],
       ),
@@ -227,7 +302,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             backgroundColor: AppColors.primarySage,
             elevation: 0,
             actions: [
-              // 🚀 NOVO: Botão de Pesquisa Global adicionado no topo ao lado do sino
               IconButton(
                 icon: const Icon(Icons.search, size: 26, color: Colors.white),
                 onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodSearchScreen(turno: 'Geral'))),
@@ -384,52 +458,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildCardPostEstatico() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
-              const SizedBox(width: 12),
-              Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Nutricionista Ana Silva 👑', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)), Text('Canal de Dicas', style: TextStyle(color: Colors.grey, fontSize: 11))])
-            ],
-          ),
-          const SizedBox(height: 12),
-          const Text('Bem-vindo ao Feed Oficial! Fique atento, aqui postarei atualizações, artigos de performance e orientações exclusivas sobre nutrição clínica e esportiva.', style: TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)),
-          const SizedBox(height: 16),
-          const Divider(height: 1),
-          Row(
-            children: [
-              IconButton(icon: const Icon(Icons.favorite_border, color: Colors.grey), onPressed: () {}),
-              const Text('0 curtidas', style: TextStyle(color: Colors.grey, fontSize: 12)),
-              const SizedBox(width: 24),
-              IconButton(icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22), onPressed: () {}),
-              const Text('0 comentários', style: TextStyle(color: Colors.grey, fontSize: 12)),
-            ],
-          )
-        ],
-      ),
-    );
-  }
-
-  Widget _construirBotaoPeso() {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.shade100)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Mantenha seu peso atualizado', style: TextStyle(fontSize: 12, color: Colors.grey))]),
-          ElevatedButton(onPressed: () => _abrirDialogoRegistrarPeso(context), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage), child: const Text('Pesar', style: TextStyle(color: Colors.white))),
-        ],
-      ),
     );
   }
 
