@@ -20,6 +20,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+  bool _curtiuPostExemplo = false; // Estado simulado para o Feed
 
   String _getTodayDateKey() {
     final agora = DateTime.now();
@@ -93,33 +94,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final dataHoje = _getTodayDateKey();
 
-    return Scaffold(
-      backgroundColor: AppColors.backgroundCreme,
-      appBar: AppBar(
-        title: const Text('Meu Painel', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.primarySage,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.account_circle, size: 26, color: Colors.white),
-            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
-          )
-        ],
-      ),
-      body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('usuarios').doc(_userId).get(),
-        builder: (context, userSnapshot) {
-          String objetivo = 'Emagrecimento';
-          if (userSnapshot.hasData && userSnapshot.data!.exists) {
-            final dadosUser = userSnapshot.data!.data() as Map<String, dynamic>?;
-            objetivo = dadosUser?['objetivo'] ?? 'Emagrecimento';
-          }
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).snapshots(),
+      builder: (context, userSnapshot) {
+        String objetivo = 'Emagrecimento';
+        String? fotoPerfilUrl;
 
-          return StreamBuilder<DocumentSnapshot>(
+        if (userSnapshot.hasData && userSnapshot.data!.exists) {
+          final dadosUser = userSnapshot.data!.data() as Map<String, dynamic>?;
+          objetivo = dadosUser?['objective'] ?? dadosUser?['objetivo'] ?? 'Emagrecimento';
+          fotoPerfilUrl = dadosUser?['foto_perfil'];
+        }
+
+        return Scaffold(
+          backgroundColor: AppColors.backgroundCreme,
+          appBar: AppBar(
+            title: const Text('Meu Painel', style: TextStyle(color: Colors.white)),
+            backgroundColor: AppColors.primarySage,
+            elevation: 0,
+            actions: [
+              // 🚀 NOVO: Sino de Notificações Restaurado
+              IconButton(
+                icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Nenhuma notificação nova no momento.🔔')));
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white),
+                onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen())),
+              ),
+              const SizedBox(width: 4),
+              // 🚀 NOVO: Foto real do paciente no lugar do boneco cinza
+              GestureDetector(
+                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
+                child: Padding(
+                  padding: const EdgeInsets.only(right: 16.0),
+                  child: CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.white24,
+                    backgroundImage: fotoPerfilUrl != null ? NetworkImage(fotoPerfilUrl) : null,
+                    child: fotoPerfilUrl == null ? const Icon(Icons.person, size: 18, color: Colors.white) : null,
+                  ),
+                ),
+              )
+            ],
+          ),
+          body: StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).snapshots(),
             builder: (context, snapshot) {
               int consumido = 0, meta = 2000, queimado = 0;
@@ -159,7 +180,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Text('Ferramentas de Acompanhamento', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 16),
                     
-                    // 🚀 RETORNO DO GRID COMPLETO DE 6 BOTÕES
                     GridView.count(
                       crossAxisCount: 2,
                       shrinkWrap: true,
@@ -176,14 +196,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         _cardTool(Icons.analytics_outlined, 'Estatísticas IMC', 'Histórico Clínico', Colors.teal, () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BmiStatsScreen()))),
                       ],
                     ),
+                    const SizedBox(height: 28),
+
+                    // 🚀 ESTRATÉGICO: Terreno do Feed de Conteúdos da Nutri
+                    const Text('Feed da Comunidade 📣', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                    const SizedBox(height: 12),
+                    _construirCardFeedMockup(),
+                    
                     const SizedBox(height: 32),
                   ],
                 ),
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -201,6 +228,52 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _construirCardFeedMockup() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)),
+              const SizedBox(width: 12),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text('Nutricionista Ana Silva 👑', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)),
+                  Text('Postado há 2 horas', style: TextStyle(color: Colors.grey, fontSize: 11)),
+                ],
+              )
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Dica de ouro para quem está no foco de Hipertrofia ou Emagrecimento: O consumo estratégico de água gelada antes dos treinos ajuda na regulação térmica e aumenta a performance metabólica em até 12%. Não pulem a hidratação!',
+            style: TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              IconButton(
+                icon: Icon(_curtiuPostExemplo ? Icons.favorite : Icons.favorite_border, color: _curtiuPostExemplo ? Colors.red : Colors.grey),
+                onPressed: () => setState(() => _curtiuPostExemplo = !_curtiuPostExemplo),
+              ),
+              Text('24 curtidas', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+              const SizedBox(width: 24),
+              const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
+              const SizedBox(width: 6),
+              Text('5 comentários', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            ],
+          )
+        ],
+      ),
+    );
+  }
+
   Widget _cardTool(IconData icone, String tit, String sub, Color cor, VoidCallback action) {
     return GestureDetector(
       onTap: action,
@@ -213,9 +286,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Icon(icone, color: cor, size: 28),
             const SizedBox(height: 8),
-            Text(tit, style: const TextStyle(color: Colors.white, grandmother: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(tit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
             Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11))
-          ]
+          ],
         ),
       ),
     );
@@ -244,7 +317,9 @@ class _CardCaloriasPremium extends StatelessWidget {
               Stack(
                 alignment: Alignment.center,
                 children: [
-                  SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage)),
+                  Navigator.of(context) != null 
+                  ? SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage))
+                  : const SizedBox(),
                   Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
