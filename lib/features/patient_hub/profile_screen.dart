@@ -39,18 +39,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _processarOrigemImagem(ImageSource source) async {
-    Navigator.pop(context); // Fecha o menu inferior
-    final XFile? imagemSelecionada = await _picker.pickImage(imageSource: source, imageQuality: 70);
+  void _processarOrigemImagem(ImageSource deOnde) async {
+    Navigator.pop(context);
+    // 🚀 CORRIGIDO: de imageSource: para source:
+    final XFile? imagemSelecionada = await _picker.pickImage(source: deOnde, imageQuality: 70);
     
     if (imagemSelecionada != null) {
       setState(() => _enviandoFoto = true);
       
-      // Envia pro servidor gratuito ImgBB
       String? urlNuvem = await ImgBbService.uploadImage(imagemSelecionada);
       
       if (urlNuvem != null) {
-        // Grava o link de texto direto no documento do usuário
         await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
           'foto_perfil': urlNuvem,
         }, SetOptions(merge: true));
@@ -89,7 +88,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.all(24.0),
             child: Column(
               children: [
-                // CENTRAL DE FOTO INTELIGENTE
                 Center(
                   child: Stack(
                     alignment: Alignment.bottomRight,
@@ -115,10 +113,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(height: 32),
                 
-                // MANTÉM OS SEUS CAMPOS DE FORMULÁRIO TEXTFIELD ABAIXO...
                 _buildCampoDados('Nome Completo', dados['nome'] ?? 'Bruno Resende dos Santos'),
                 _buildCampoDados('Idade', dados['idade']?.toString() ?? '29'),
-                _buildCampoDados('Objetivo', dados['objetivo'] ?? 'Emagrecimento'),
+                _buildCampoDados('Objetivo', dados['objective'] ?? 'Emagrecimento'),
                 _buildCampoDados('Altura (m)', dados['altura']?.toString() ?? '1.74'),
                 _buildCampoDados('Peso Inicial (kg)', dados['peso_inicial']?.toString() ?? '87.4'),
               ],
