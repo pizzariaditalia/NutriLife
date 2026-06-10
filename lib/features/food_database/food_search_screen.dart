@@ -9,7 +9,6 @@ import 'barcode_scanner_screen.dart';
 
 class FoodSearchScreen extends StatefulWidget {
   final String turno;
-  // 🛠️ CORREÇÃO AQUI: Removemos o "required" e colocamos 'Geral' como padrão
   const FoodSearchScreen({Key? key, this.turno = 'Geral'}) : super(key: key);
 
   @override
@@ -21,13 +20,28 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   Timer? _debounce;
   bool _buscandoNaNuvem = false;
 
-  // 📝 Lista Local Rápida
+  // 📝 LISTA LOCAL HIPER-EXPANDIDA COM MAIS DE 20 ALIMENTOS BASE RÁPIDOS
   List<Map<String, dynamic>> _resultados = [
     {'nome': 'Arroz Branco Cozido', 'marca': 'Caseiro', 'kcal': 130, 'carbos': 28.0, 'proteinas': 2.0, 'gorduras': 0.0, 'porcao': '100g'},
     {'nome': 'Feijão Carioca Cozido', 'marca': 'Caseiro', 'kcal': 76, 'carbos': 14.0, 'proteinas': 4.0, 'gorduras': 0.0, 'porcao': '100g'},
     {'nome': 'Peito de Frango Grelhado', 'marca': 'Caseiro', 'kcal': 165, 'carbos': 0.0, 'proteinas': 31.0, 'gorduras': 3.0, 'porcao': '100g'},
     {'nome': 'Ovo Cozido', 'marca': 'Granja', 'kcal': 78, 'carbos': 0.0, 'proteinas': 6.0, 'gorduras': 5.0, 'porcao': '1 Unidade (50g)'},
     {'nome': 'Banana Prata', 'marca': 'In Natura', 'kcal': 89, 'carbos': 23.0, 'proteinas': 1.0, 'gorduras': 0.0, 'porcao': '1 Unidade (100g)'},
+    {'nome': 'Carne Moída Patinho Grelhado', 'marca': 'Açougue', 'kcal': 219, 'carbos': 0.0, 'proteinas': 32.0, 'gorduras': 9.0, 'porcao': '100g'},
+    {'nome': 'Batata Doce Cozida', 'marca': 'In Natura', 'kcal': 86, 'carbos': 20.0, 'proteinas': 1.6, 'gorduras': 0.0, 'porcao': '100g'},
+    {'nome': 'Whey Protein 80%', 'marca': 'Growth/Max', 'kcal': 120, 'carbos': 4.0, 'proteinas': 24.0, 'gorduras': 1.0, 'porcao': '1 Dosador (30g)'},
+    {'nome': 'Aveia em Flocos', 'marca': 'Quaker', 'kcal': 105, 'carbos': 17.0, 'proteinas': 4.3, 'gorduras': 2.2, 'porcao': '2 colheres (30g)'},
+    {'nome': 'Tapioca Pronta', 'marca': 'Akio', 'kcal': 240, 'carbos': 60.0, 'proteinas': 0.0, 'gorduras': 0.0, 'porcao': '100g'},
+    {'nome': 'Iogurte Natural Desnatado', 'marca': 'Nestlé', 'kcal': 52, 'carbos': 7.0, 'proteinas': 5.0, 'gorduras': 0.0, 'porcao': '1 Pote (170g)'},
+    {'nome': 'Pão de Forma Integral', 'marca': 'Wickbold', 'kcal': 120, 'carbos': 22.0, 'proteinas': 6.0, 'gorduras': 1.5, 'porcao': '2 Fatias (50g)'},
+    {'nome': 'Pasta de Amendoim', 'marca': 'IntegralMedica', 'kcal': 90, 'carbos': 3.0, 'proteinas': 4.0, 'gorduras': 8.0, 'porcao': '1 Colher (15g)'},
+    {'nome': 'Azeite de Oliva Extra Virgem', 'marca': 'Galo', 'kcal': 120, 'carbos': 0.0, 'proteinas': 0.0, 'gorduras': 14.0, 'porcao': '1 Colher (13ml)'},
+    {'nome': 'Queijo Cottage', 'marca': 'Verde Campo', 'kcal': 90, 'carbos': 3.0, 'proteinas': 12.0, 'gorduras': 3.0, 'porcao': '2 colheres (50g)'},
+    {'nome': 'Maçã Fuji', 'marca': 'In Natura', 'kcal': 52, 'carbos': 14.0, 'proteinas': 0.3, 'gorduras': 0.2, 'porcao': '1 Unidade (100g)'},
+    {'nome': 'Castanha do Pará', 'marca': 'Granel', 'kcal': 65, 'carbos': 1.2, 'proteinas': 1.4, 'gorduras': 6.5, 'porcao': '2 Unidades (10g)'},
+    {'nome': 'Cuscuz de Milho Cozido', 'marca': 'Flokin', 'kcal': 112, 'carbos': 25.0, 'proteinas': 2.2, 'gorduras': 0.5, 'porcao': '100g'},
+    {'nome': 'Leite Desnatado líquido', 'marca': 'Molico', 'kcal': 70, 'carbos': 10.0, 'proteinas': 6.5, 'gorduras': 0.0, 'porcao': '1 Copo (200ml)'},
+    {'nome': 'Atum Ralado em Óleo', 'marca': 'Coqueiro', 'kcal': 160, 'carbos': 0.0, 'proteinas': 24.0, 'gorduras': 7.0, 'porcao': '1 Lata (120g)'},
   ];
 
   @override
@@ -37,7 +51,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     super.dispose();
   }
 
-  // 🌐 MOTOR DE BUSCA GLOBAL
   void _pesquisarAlimento(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     
@@ -98,7 +111,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     });
   }
 
-  // 📝 PAINEL DE AJUSTE
   void _mostrarPainelDeConfirmacao(Map<String, dynamic> produto) {
     TextEditingController kcalController = TextEditingController(text: produto['kcal'].toString());
     TextEditingController porcaoController = TextEditingController(text: '1.0');
@@ -122,23 +134,17 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
           children: [
             const Text('Confirmar Alimento 🔍', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
             const SizedBox(height: 8),
-            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, grandmother: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('Valores baseados em: ${produto['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-            
             const SizedBox(height: 24),
-            
             Row(
               children: [
                 Expanded(
                   child: TextField(
                     controller: kcalController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: 'Calorias (kcal)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.primarySage)),
-                    ),
+                    decoration: InputDecoration(labelText: 'Calorias (kcal)', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -146,35 +152,20 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                   child: TextField(
                     controller: porcaoController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    decoration: InputDecoration(
-                      labelText: 'Multiplicador',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      focusedBorder: const OutlineInputBorder(borderSide: BorderSide(color: AppColors.primarySage)),
-                    ),
+                    decoration: InputDecoration(labelText: 'Multiplicador', border: OutlineInputBorder(borderRadius: BorderRadius.circular(12))),
                   ),
                 ),
               ],
             ),
-            
             const SizedBox(height: 24),
-            
             Row(
               children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
-                  ),
-                ),
+                Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey)))),
                 Expanded(
                   child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primarySage,
-                      padding: const EdgeInsets.symmetric(vertical: 14),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
-                    ),
+                    style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                     onPressed: () => _salvarNoDiario(produto, kcalController.text, porcaoController.text),
-                    child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, grandmother: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -185,7 +176,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     );
   }
 
-  // 💾 SALVA NO FIREBASE
   void _salvarNoDiario(Map<String, dynamic> produtoBase, String kcalDigitada, String multiplicadorDigitado) async {
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
     final agora = DateTime.now();
@@ -209,7 +199,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       'historico_alimentos': FieldValue.arrayUnion([
         {
           'nome': "${produtoBase['nome']} (${produtoBase['marca']})",
-          'turno': widget.turno, // Vai ser 'Geral' se aberto pela barra inferior
+          'turno': widget.turno,
           'quantidade': multiplicador,
           'medida_escolhida': produtoBase['porcao'],
           'calorias': caloriasTotais,
@@ -219,9 +209,9 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     }, SetOptions(merge: true));
 
     if (mounted) {
-      Navigator.pop(context); // Fecha o dialog
-      Navigator.pop(context); // Volta
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚡ Adicionado com sucesso!'), backgroundColor: AppColors.primarySage));
+      Navigator.pop(context); 
+      Navigator.pop(context); 
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('⚡ Adicionado ao ${widget.turno}!'), backgroundColor: AppColors.primarySage));
     }
   }
 
@@ -237,7 +227,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       ),
       body: Column(
         children: [
-          // BARRA DE PESQUISA & SCANNER
           Container(
             padding: const EdgeInsets.all(16),
             color: AppColors.primarySage,
@@ -269,8 +258,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
               ],
             ),
           ),
-
-          // LISTA DE RESULTADOS
           Expanded(
             child: _buscandoNaNuvem
                 ? const Center(child: CircularProgressIndicator(color: AppColors.primarySage))
@@ -298,7 +285,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                                         const SizedBox(height: 4),
                                         Text('${item['marca']} • ${item['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                                         const SizedBox(height: 8),
-                                        Text('C: ${item['carbos'].toInt()}g  |  P: ${item['proteinas'].toInt()}g  |  G: ${item['gorduras'].toInt()}g', style: const TextStyle(fontSize: 11, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                                        Text('C: ${item['carbos'].toInt()}g  |  P: ${item['proteinas'].toInt()}g  |  G: ${item['gorduras'].toInt()}g', style: const TextStyle(fontSize: 11, color: AppColors.primarySage, grandmother: FontWeight.bold)),
                                       ],
                                     ),
                                   ),
