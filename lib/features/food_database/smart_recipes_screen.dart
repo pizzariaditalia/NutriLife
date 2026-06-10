@@ -36,7 +36,6 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
     // 🧬 SAÚDE & LONGEVIDADE
     {'nome': 'Bowl de Salmão e Abacate', 'ingredientes': 'Salmão Grelhado, Abacate, Arroz Integral', 'kcal': 450, 'c': 30.0, 'p': 35.0, 'g': 20.0, 'icone': Icons.set_meal, 'objetivo_foco': 'Saúde & Longevidade'},
     {'nome': 'Mix Antioxidante Funcional', 'ingredientes': 'Kefir, Mirtilo, Framboesa, Semente de Girassol', 'kcal': 190, 'c': 16.0, 'p': 8.0, 'g': 9.0, 'icone': Icons.local_pharmacy, 'objetivo_foco': 'Saúde & Longevidade'},
-    // 🚀 CORRIGIDO: de Icons.salad para Icons.local_dining
     {'nome': 'Salada de Grão de Bico Viva', 'ingredientes': 'Grão de Bico, Tomate Cereja, Pepino, Azeite Extra Virgem', 'kcal': 260, 'c': 28.0, 'p': 11.0, 'g': 10.0, 'icone': Icons.local_dining, 'objetivo_foco': 'Saúde & Longevidade'},
   ];
 
@@ -49,7 +48,7 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
     await docRef.set({
       'calorias_consumidas': FieldValue.increment(kcal),
       'carbos_consumidos': FieldValue.increment(carbos),
-      'proteinas_consumidos': FieldValue.increment(prot),
+      'proteinas_consumidos': FieldValue.increment(gord),
       'gorduras_consumidos': FieldValue.increment(gord),
       'historico_alimentos': FieldValue.arrayUnion([
         {
@@ -141,8 +140,9 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
           final dadosUser = snapshot.data!.data() as Map<String, dynamic>?;
           final objetivoPaciente = dadosUser?['objetivo'] ?? 'Emagrecimento';
 
+          // 🚀 CORRIGIDO: de objective_foco para objetivo_foco em todas as validações
           final receitasFiltradas = _todasReceitas.where((r) => 
-            r['objective_foco'] == objetivoPaciente || r['objetivo_foco'] == 'Emagrecimento' || r['objetivo_foco'] == objetivoPaciente
+            r['objetivo_foco'] == objetivoPaciente || r['objetivo_foco'] == 'Emagrecimento'
           ).toList();
 
           return ListView(
