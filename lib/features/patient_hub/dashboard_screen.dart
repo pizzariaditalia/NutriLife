@@ -31,7 +31,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Registrar Peso Atual', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        title: const Text('Registrar Peso Actual', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
         content: TextField(
           controller: txtController,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
@@ -142,7 +142,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 🚀 CORRIGIDO: de $objective para $objetivo
                     Text('Foco: $objetivo 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
                     
@@ -265,7 +264,8 @@ class _CardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
               _macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta),
-              _macro('Proteínas', proteinas, objective == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
+              // 🚀 CORRIGIDO: de objective para objetivo
+              _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
               _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach),
             ],
           ),
