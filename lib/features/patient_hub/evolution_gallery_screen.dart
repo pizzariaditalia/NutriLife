@@ -15,7 +15,7 @@ class EvolutionGalleryScreen extends StatefulWidget {
 class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
   final _picker = ImagePicker();
-  String _uploadingKey = ''; // Controla qual slot está carregando no momento
+  String _uploadingKey = '';
 
   void _selecionarImagem(String chaveSlot) {
     showModalBottomSheet(
@@ -39,9 +39,10 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
     );
   }
 
-  void _fazerUploadSlot(String chaveSlot, ImageSource source) async {
+  void _fazerUploadSlot(String chaveSlot, ImageSource deOnde) async {
     Navigator.pop(context);
-    final XFile? foto = await _picker.pickImage(imageSource: source, imageQuality: 70);
+    // 🚀 CORRIGIDO: de imageSource: para source:
+    final XFile? foto = await _picker.pickImage(source: deOnde, imageQuality: 70);
     
     if (foto != null) {
       setState(() => _uploadingKey = chaveSlot);
@@ -49,7 +50,6 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
       String? linkUrl = await ImgBbService.uploadImage(foto);
       
       if (linkUrl != null) {
-        // Salva a string da imagem exatamente no slot correto (ex: antes_1, depois_3)
         await FirebaseFirestore.instance
             .collection('usuarios')
             .doc(_userId)
@@ -88,7 +88,6 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
               Text('Monitore suas mudanças físicas. Suas fotos estão seguras e privadas.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
               const SizedBox(height: 32),
 
-              // SEÇÃO ANTES
               const Text('FOTOS DE ANTES (INÍCIO)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.primarySage, letterSpacing: 1)),
               const SizedBox(height: 12),
               Row(
@@ -103,7 +102,6 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
 
               const SizedBox(height: 36),
 
-              // SEÇÃO DEPOIS
               const Text('FOTOS DE DEPOIS (ATUAL)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.accentPeach, letterSpacing: 1)),
               const SizedBox(height: 12),
               Row(
@@ -126,7 +124,7 @@ class _EvolutionGalleryScreenState extends State<EvolutionGalleryScreen> {
     bool carregandoEsteSlot = _uploadingKey == chaveSlot;
 
     return AspectRatio(
-      aspectRatio: 1, // 🔒 PROPORÇÃO FIXADA: Força um quadrado perfeito e impede quebras de layout
+      aspectRatio: 1, 
       child: GestureDetector(
         onTap: carregandoEsteSlot ? null : () => _selecionarImagem(chaveSlot),
         child: Container(
