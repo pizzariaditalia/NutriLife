@@ -4,7 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutri_life/core/theme/app_colors.dart';
 import 'package:nutri_life/features/patient_hub/profile_screen.dart';
 import 'package:nutri_life/features/patient_hub/fasting_screen.dart';
-import 'package:nutri_life/features/grocery_list_screen.dart';
+// 🚀 CORRIGIDO: O caminho correto agora inclui a pasta patient_hub
+import 'package:nutri_life/features/patient_hub/grocery_list_screen.dart';
 import 'package:nutri_life/features/patient_hub/evolution_gallery_screen.dart';
 import 'package:nutri_life/features/patient_hub/habits_screen.dart';
 import 'package:nutri_life/features/patient_hub/bmi_stats_screen.dart';          
@@ -22,7 +23,6 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
   
-  // Variáveis para fazer o Feed de teste funcionar na hora
   bool _curtiuEstatico = false;
   int _qtdCurtidasEstaticas = 24;
   final List<String> _comentariosEstaticos = [
@@ -173,7 +173,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // 💬 COMENTÁRIOS DA POSTAGEM DE TESTE LOCAL
   void _abrirComentariosEstaticos() {
     final commentCtrl = TextEditingController();
     showModalBottomSheet(
@@ -217,10 +216,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       icon: const Icon(Icons.send, color: AppColors.primarySage),
                       onPressed: () {
                         if (commentCtrl.text.trim().isEmpty) return;
-                        setState(() {
+                        setModalState(() {
                           _comentariosEstaticos.add(commentCtrl.text.trim());
                         });
-                        setModalState(() {}); // Atualiza o modal na hora
                         commentCtrl.clear();
                       },
                     )
@@ -230,6 +228,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _construirRastreadorAgua(int consumido) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.shade100)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.water_drop, color: Colors.blue, size: 32),
+              const SizedBox(width: 16),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Hidratação Diária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                  Text('Você já bebeu $consumido ml hoje', style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500)),
+                ],
+              ),
+            ],
+          ),
+          ElevatedButton.icon(
+            onPressed: _adicionarAgua,
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            icon: const Icon(Icons.add, color: Colors.white, size: 16),
+            label: const Text('+250ml', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          )
+        ],
       ),
     );
   }
@@ -254,7 +284,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const Divider(height: 1),
           Row(
             children: [
-              // 🚀 CORREÇÃO CURTIDA: Agora muda de estado e soma localmente na hora!
               IconButton(
                 icon: Icon(_curtiuEstatico ? Icons.favorite : Icons.favorite_border, color: _curtiuEstatico ? Colors.red : Colors.grey),
                 onPressed: () {
@@ -266,7 +295,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               Text('$_qtdCurtidasEstaticas curtidas', style: const TextStyle(color: Colors.grey, fontSize: 12)),
               const SizedBox(width: 24),
-              // 🚀 CORREÇÃO COMENTÁRIO: Abre a caixa interativa funcional
               IconButton(
                 icon: const Icon(Icons.chat_bubble_outline, color: Colors.grey, size: 22),
                 onPressed: _abrirComentariosEstaticos,
@@ -275,6 +303,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           )
         ],
+      ),
+    );
+  }
+
+  Widget _construirBotaoPeso() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.shade100)),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [Text('Evolução de Peso', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Mantenha seu peso atualizado', style: TextStyle(fontSize: 12, color: Colors.grey))]),
+          ElevatedButton(onPressed: () => _abrirDialogoRegistrarPeso(context), style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage), child: const Text('Pesar', style: TextStyle(color: Colors.white))),
+        ],
+      ),
+    );
+  }
+
+  Widget _cardTool(IconData icone, String tit, String sub, Color cor, VoidCallback action) {
+    return GestureDetector(
+      onTap: action,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(color: const Color(0xFF1E2126), borderRadius: BorderRadius.circular(20)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icone, color: cor, size: 28),
+            const SizedBox(height: 8),
+            Text(tit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11))
+          ],
+        ),
       ),
     );
   }
@@ -333,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).snapshots(),
             builder: (context, snapshot) {
               int consumido = 0, meta = 2000, queimado = 0, agua = 0;
-              double carbos = 0, proteinas = 0, gorduars = 0;
+              double carbos = 0, proteinas = 0, gorduras = 0;
 
               if (snapshot.hasData && snapshot.data!.exists) {
                 final dados = snapshot.data!.data() as Map<String, dynamic>;
@@ -343,7 +405,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 agua = dados['agua_consumida'] ?? 0;
                 carbos = (dados['carbos_consumidos'] ?? 0).toDouble();
                 proteinas = (dados['proteinas_consumidos'] ?? 0).toDouble();
-                gorduars = (dados['gorduras_consumidos'] ?? 0).toDouble();
+                gorduras = (dados['gorduras_consumidos'] ?? 0).toDouble();
               }
 
               int restante = (meta - consumido + queimado).clamp(0, 9999);
@@ -359,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _CardCaloriasPremium(
                       consumido: consumido, meta: meta, restante: restante, 
                       queimado: queimado, carbos: carbos, proteinas: proteinas, 
-                      gorduras: gorduars, objetivo: objetivo
+                      gorduras: gorduras, objetivo: objetivo
                     ),
                     const SizedBox(height: 24),
                     
@@ -458,26 +520,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _cardTool(IconData icone, String tit, String sub, Color cor, VoidCallback action) {
-    return GestureDetector(
-      onTap: action,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: const Color(0xFF1E2126), borderRadius: BorderRadius.circular(20)),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icone, color: cor, size: 28),
-            const SizedBox(height: 8),
-            Text(tit, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14), maxLines: 1, overflow: TextOverflow.ellipsis),
-            Text(sub, style: const TextStyle(color: Colors.white54, fontSize: 11))
-          ],
-        ),
-      ),
     );
   }
 }
