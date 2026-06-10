@@ -26,7 +26,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
   }
 
-  // 💧 MOTOR DE HIDRATAÇÃO: Adiciona 250ml no Firebase
   void _adicionarAgua() async {
     final dataHoje = _getTodayDateKey();
     await FirebaseFirestore.instance
@@ -35,6 +34,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .collection('diario')
         .doc(dataHoje)
         .set({'agua_consumida': FieldValue.increment(250)}, SetOptions(merge: true));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('💧 Ótimo! +250ml de pura hidratação. Seu metabolismo agradece! 🚀'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   void _abrirDialogoRegistrarPeso(BuildContext context) {
@@ -57,10 +66,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 double? pesoDigitado = double.tryParse(txtController.text.replaceAll(',', '.'));
                 if (pesoDigitado != null) {
                   final dataKey = _getTodayDateKey();
+                  
+                  // 🚀 CONEXÃO DE FIOS: Salva na tabela de histórico
                   await FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('historico_peso').doc(dataKey).set({
                     'peso': pesoDigitado, 'data': dataKey, 'timestamp': DateTime.now().millisecondsSinceEpoch
                   });
-                  if (context.mounted) Navigator.pop(context);
+
+                  // 🚀 CONEXÃO DE FIOS: Atualiza diretamente o Perfil do usuário para o IMC calcular em tempo real!
+                  await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
+                    'peso_atual': pesoDigitado
+                  }, SetOptions(merge: true));
+
+                  if (context.mounted) {
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('⚖️ Peso atualizado e registrado com sucesso!'), backgroundColor: AppColors.primarySage)
+                    );
+                  }
                 }
               }
             },
@@ -71,7 +93,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // ❤️ INTERATIVIDADE DO FEED: Sistema de Curtida Única por Usuário
   void _alternarCurtidaPost(String postId, List<dynamic> curtidas) async {
     final docRef = FirebaseFirestore.instance.collection('feed').doc(postId);
     if (curtidas.contains(_userId)) {
@@ -81,7 +102,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  // 💬 INTERATIVIDADE DO FEED: Painel de Comentários em Tempo Real
   void _abrirAbasComentarios(String postId) {
     final commentCtrl = TextEditingController();
     showModalBottomSheet(
@@ -262,7 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(height: 24),
                     
-                    // 🚀 ORDEM CORRETA: Água posicionado acima do Peso (Pesar)
+                    // 🚀 RETORNO OFICIAL: Água fixada acima do Peso
                     _construirRastreadorAgua(agua),
                     _construirBotaoPeso(),
                     const SizedBox(height: 24),
@@ -291,12 +311,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const Text('Feed da Comunidade 📣', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 12),
                     
-                    // 🚀 STREAM DO FEED REAL DO FIREBASE
                     StreamBuilder<QuerySnapshot>(
                       stream: FirebaseFirestore.instance.collection('feed').orderBy('timestamp', descending: true).snapshots(),
                       builder: (context, feedSnap) {
                         if (!feedSnap.hasData || feedSnap.data!.docs.isEmpty) {
-                          // Post de boas-vindas padrão enquanto a Nutri não posta nada na nuvem
                           return _buildCardPostEstatico();
                         }
 
