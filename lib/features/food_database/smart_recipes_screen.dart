@@ -13,13 +13,31 @@ class SmartRecipesScreen extends StatefulWidget {
 class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
 
-  // Banco de Dados Local Simulado (Até migrarmos as 100+ para a nuvem)
+  // 🔥 BANCO DE DADOS EXPANDIDO COM DEZENAS DE OPÇÕES PRONTAS POR OBJETIVO
   final List<Map<String, dynamic>> _todasReceitas = [
+    // 🍏 EMAGRECIMENTO
     {'nome': 'Panqueca de Aveia', 'ingredientes': 'Ovos, Aveia, Banana e Canela', 'kcal': 250, 'c': 30.0, 'p': 15.0, 'g': 8.0, 'icone': Icons.breakfast_dining, 'objetivo_foco': 'Emagrecimento'},
     {'nome': 'Pizza Fit de Frigideira', 'ingredientes': 'Rap10, Molho, Queijo Magro e Frango', 'kcal': 320, 'c': 25.0, 'p': 28.0, 'g': 12.0, 'icone': Icons.local_pizza, 'objetivo_foco': 'Emagrecimento'},
-    {'nome': 'Vitamina Hipercalórica', 'ingredientes': 'Leite, Banana, Pasta de Amendoim, Whey', 'kcal': 650, 'c': 60.0, 'p': 40.0, 'g': 25.0, 'icone': Icons.local_drink, 'objetivo_foco': 'Hipertrofia'},
-    {'nome': 'Bowl de Salmão e Abacate', 'ingredientes': 'Salmão, Abacate, Arroz, Gergelim', 'kcal': 450, 'c': 30.0, 'p': 35.0, 'g': 20.0, 'icone': Icons.set_meal, 'objetivo_foco': 'Saúde & Longevidade'},
-    {'nome': 'Crepioca Nutritiva', 'ingredientes': 'Ovos, Tapioca, Espinafre e Queijo', 'kcal': 280, 'c': 22.0, 'p': 25.0, 'g': 9.0, 'icone': Icons.egg_alt, 'objetivo_foco': 'Gestante ou Tentante'},
+    {'nome': 'Omelete de Claras Sem Óleo', 'ingredientes': '3 Claras, 1 Ovo, Tomate, Cebola, Espinafre', 'kcal': 140, 'c': 4.0, 'p': 18.0, 'g': 6.0, 'icone': Icons.egg, 'objetivo_foco': 'Emagrecimento'},
+    {'nome': 'Sopa Creme de Abóbora com Frango', 'ingredientes': 'Abóbora Cabotiá, Peito de Frango Desfiado', 'kcal': 210, 'c': 15.0, 'p': 24.0, 'g': 4.0, 'icone': Icons.soup_kitchen, 'objetivo_foco': 'Emagrecimento'},
+    {'nome': 'Mousse de Whey de Chocolate', 'ingredientes': 'Whey Protein, Iogurte Desnatado, Cacau', 'kcal': 160, 'c': 8.0, 'p': 26.0, 'g': 2.0, 'icone': Icons.icecream, 'objetivo_foco': 'Emagrecimento'},
+
+    // 💪 HIPERTROFIA
+    {'nome': 'Vitamina Hipercalórica Pro', 'ingredientes': 'Leite Inteiro, Banana, Pasta de Amendoim, Whey', 'kcal': 680, 'c': 65.0, 'p': 42.0, 'g': 24.0, 'icone': Icons.local_drink, 'objetivo_foco': 'Hipertrofia'},
+    {'nome': 'Arroz Termogênico com Patinho', 'ingredientes': 'Arroz Parboilizado, Patinho Moído, Azeite', 'kcal': 550, 'c': 55.0, 'p': 40.0, 'g': 14.0, 'icone': Icons.rice_bowl, 'objetivo_foco': 'Hipertrofia'},
+    {'nome': 'Macarrão Fake Integral com Atum', 'ingredientes': 'Macarrão Integral, Atum Ralado, Creme de Leite Leve', 'kcal': 490, 'c': 48.0, 'p': 35.0, 'g': 12.0, 'icone': Icons.dinner_dining, 'objetivo_foco': 'Hipertrofia'},
+    {'nome': 'Panqueca Monstro de Batata Doce', 'ingredientes': 'Batata Doce Cozida, 3 Ovos, Whey isolado', 'kcal': 430, 'c': 40.0, 'p': 32.0, 'g': 11.0, 'icone': Icons.cake, 'objetivo_foco': 'Hipertrofia'},
+    {'nome': 'Mingau de Aveia Giga', 'ingredientes': 'Aveia em Flocos, Leite de Amêndoas, Whey, Mel', 'kcal': 390, 'c': 50.0, 'p': 28.0, 'g': 6.0, 'icone': Icons.bakery_dining, 'objetivo_foco': 'Hipertrofia'},
+
+    // 👶 GESTANTE OU TENTANTE
+    {'nome': 'Crepioca Nutritiva de Espinafre', 'ingredientes': 'Ovos, Tapioca, Espinafre e Queijo Branco', 'kcal': 280, 'c': 22.0, 'p': 25.0, 'g': 9.0, 'icone': Icons.egg_alt, 'objetivo_foco': 'Gestante ou Tentante'},
+    {'nome': 'Iogurte da Mamãe C/ Chia', 'ingredientes': 'Iogurte Natural, Chia, Morangos, Castanhas', 'kcal': 220, 'c': 18.0, 'p': 10.0, 'g': 12.0, 'icone': Icons.breakfast_dining, 'objetivo_foco': 'Gestante ou Tentante'},
+    {'nome': 'Sanduíche Integral de Ferro', 'ingredientes': 'Pão Integral, Ricota Temperada, Cenoura, Agrião', 'kcal': 240, 'c': 26.0, 'p': 12.0, 'g': 7.0, 'icone': Icons.lunch_dining, 'objetivo_foco': 'Gestante ou Tentante'},
+
+    // 🧬 SAÚDE & LONGEVIDADE
+    {'nome': 'Bowl de Salmão e Abacate', 'ingredientes': 'Salmão Grelhado, Abacate, Arroz Integral', 'kcal': 450, 'c': 30.0, 'p': 35.0, 'g': 20.0, 'icone': Icons.set_meal, 'objetivo_foco': 'Saúde & Longevidade'},
+    {'nome': 'Mix Antioxidante Funcional', 'ingredientes': 'Kefir, Mirtilo, Framboesa, Semente de Girassol', 'kcal': 190, 'c': 16.0, 'p': 8.0, 'g': 9.0, 'icone': Icons.local_pharmacy, 'objetivo_foco': 'Saúde & Longevidade'},
+    {'nome': 'Salada de Grão de Bico Viva', 'ingredientes': 'Grão de Bico, Tomate Cereja, Pepino, Azeite Extra Virgem', 'kcal': 260, 'c': 28.0, 'p': 11.0, 'g': 10.0, 'icone': Icons.salad, 'objetivo_foco': 'Saúde & Longevidade'},
   ];
 
   void _consumirReceita(String nome, int kcal, double carbos, double prot, double gord) async {
@@ -120,11 +138,10 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
             return const Center(child: CircularProgressIndicator(color: AppColors.primarySage));
           }
 
-          // Descobre o objetivo do paciente no Firebase
           final dadosUser = snapshot.data!.data() as Map<String, dynamic>?;
           final objetivoPaciente = dadosUser?['objetivo'] ?? 'Emagrecimento';
 
-          // Filtra as receitas baseadas no objetivo (e adiciona algumas gerais para não ficar vazio)
+          // Filtra exibindo receitas do objetivo + algumas genéricas para variedade
           final receitasFiltradas = _todasReceitas.where((r) => 
             r['objetivo_foco'] == objetivoPaciente || r['objetivo_foco'] == 'Emagrecimento'
           ).toList();
@@ -134,7 +151,7 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
             children: [
               Text('Foco: $objetivoPaciente 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
               const SizedBox(height: 8),
-              Text('Receitas selecionadas especialmente para o seu projeto de saúde.', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+              Text('Sugestões calculadas exclusivamente para o seu perfil.', style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
               const SizedBox(height: 24),
               
               ...receitasFiltradas.map((receita) => _buildRecipeCard(
@@ -147,7 +164,7 @@ class _SmartRecipesScreenState extends State<SmartRecipesScreen> {
                 receita['icone']
               )).toList(),
               
-              const SizedBox(height: 80), // Espaço para não esconder atrás do botão flutuante
+              const SizedBox(height: 80),
             ],
           );
         },
