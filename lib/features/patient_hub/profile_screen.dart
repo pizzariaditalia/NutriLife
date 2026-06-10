@@ -17,6 +17,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _picker = ImagePicker();
   bool _enviandoFoto = false;
 
+  final List<String> _opcoesObjetivos = [
+    'Emagrecimento',
+    'Hipertrofia',
+    'Gestante ou Tentante',
+    'Saúde & Longevidade'
+  ];
+
   void _alterarFotoPerfil() async {
     showModalBottomSheet(
       context: context,
@@ -41,7 +48,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   void _processarOrigemImagem(ImageSource deOnde) async {
     Navigator.pop(context);
-    // 🚀 CORRIGIDO: de imageSource: para source:
     final XFile? imagemSelecionada = await _picker.pickImage(source: deOnde, imageQuality: 70);
     
     if (imagemSelecionada != null) {
@@ -55,11 +61,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }, SetOptions(merge: true));
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto de perfil atualizada com sucesso! ✨'), backgroundColor: AppColors.primarySage));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Foto de perfil atualizada! ✨'), backgroundColor: AppColors.primarySage));
         }
       }
       if (mounted) setState(() => _enviandoFoto = false);
     }
+  }
+
+  void _atualizarObjetivoNuvem(String novoObjetivo) async {
+    await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
+      'objetivo': novoObjetivo,
+    }, SetOptions(merge: true));
   }
 
   @override
@@ -83,6 +95,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           }
 
           String? fotoUrl = dados['foto_perfil'];
+          String objetivoAtual = dados['objetivo'] ?? 'Emagrecimento';
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -115,7 +128,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 
                 _buildCampoDados('Nome Completo', dados['nome'] ?? 'Bruno Resende dos Santos'),
                 _buildCampoDados('Idade', dados['idade']?.toString() ?? '29'),
-                _buildCampoDados('Objetivo', dados['objective'] ?? 'Emagrecimento'),
+                
+                // 🚀 AUTONOMIA: Dropdown interativo para mudar o foco estratégico
+                Container(
+                  margin: const EdgeInsets.only(bottom: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100)),
+                  child: DropdownButtonFormField<String>(
+                    value: _opcoesObjetivos.contains(objetivoAtual) ? objetivoAtual : 'Emagrecimento',
+                    decoration: const InputDecoration(labelText: 'Objetivo do Projeto', labelStyle: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold, fontSize: 12), border: InputBorder.none),
+                    items: _opcoesObjetivos.map((String obj) {
+                      return DropdownMenuItem<String>(value: obj, child: Text(obj, style: const TextStyle(color: AppColors.textDark, fontWeight: FontWeight.w500)));
+                    }).toList(),
+                    onChanged: (valor) {
+                      if (valor != null) _atualizarObjetivoNuvem(valor);
+                    },
+                  ),
+                ),
+
                 _buildCampoDados('Altura (m)', dados['altura']?.toString() ?? '1.74'),
                 _buildCampoDados('Peso Inicial (kg)', dados['peso_inicial']?.toString() ?? '87.4'),
               ],
