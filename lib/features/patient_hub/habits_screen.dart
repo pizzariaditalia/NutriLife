@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/app_colors.dart';
-import '../../core/services/notification_service.dart';
+import 'package:nutri_life/core/theme/app_colors.dart';
 
 class HabitsScreen extends StatefulWidget {
   const HabitsScreen({Key? key}) : super(key: key);
@@ -10,74 +9,75 @@ class HabitsScreen extends StatefulWidget {
 }
 
 class _HabitsScreenState extends State<HabitsScreen> {
-  bool _alarmeAgua = false;
-  bool _alarmeRefeicoes = false;
-
-  void _alternarAlarmesAgua(bool valor) async {
-    setState(() => _alarmeAgua = valor);
-    if (valor) {
-      await NotificationService.agendarAlarmeDiario(id: 10, titulo: 'Hora de beber água! 💧', corpo: 'Mantenha o seu metabolismo ativo. Vá buscar 250ml agora.', hora: 10, minuto: 0);
-      await NotificationService.agendarAlarmeDiario(id: 14, titulo: 'Beba Água! 🌊', corpo: 'Já completou metade da sua meta de hoje? Beba mais um copo.', hora: 14, minuto: 30);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Lembretes de Hidratação ativos! 💧'), backgroundColor: AppColors.primarySage));
-    } else {
-      await NotificationService.cancelarTodosOsAlarmes();
-      setState(() => _alarmeRefeicoes = false);
-    }
-  }
-
-  void _alternarAlarmesRefeicoes(bool valor) async {
-    setState(() => _alarmeRefeicoes = valor);
-    if (valor) {
-      await NotificationService.agendarAlarmeDiario(id: 8, titulo: 'Café da Manhã Prescrito ☕', corpo: 'Abra o seu diário para registrar a sua primeira refeição do dia.', hora: 8, minuto: 0);
-      await NotificationService.agendarAlarmeDiario(id: 16, titulo: 'Lanche da Tarde 🍌', corpo: 'Não pule o lanche para não quebrar o seu défice calórico. Hora de comer!', hora: 16, minuto: 15);
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alertas de Refeições agendados! 🍎'), backgroundColor: AppColors.primarySage));
-    } else {
-      await NotificationService.cancelarTodosOsAlarmes();
-      setState(() => _alarmeAgua = false);
-    }
-  }
+  // 🚀 EXPANDIDO: Banco de dados local com 7 lembretes essenciais de rotina
+  final List<Map<String, dynamic>> _lembretes = [
+    {'titulo': 'Desjejum Saudável 🍳', 'horario': '07:30', 'ativado': true, 'categoria': 'Refeição'},
+    {'titulo': 'Meta de Hidratação 💧', 'horario': '09:30', 'ativado': true, 'categoria': 'Água'},
+    {'titulo': 'Almoço Balanceado 🥗', 'horario': '12:30', 'ativado': false, 'categoria': 'Refeição'},
+    {'titulo': 'Lanche de Performance 🍌', 'horario': '16:00', 'ativado': true, 'categoria': 'Refeição'},
+    {'titulo': 'Hora do Treino Diário 🏃‍♂️', 'horario': '18:30', 'ativado': false, 'categoria': 'Treino'},
+    {'titulo': 'Jantar Leve 🍗', 'horario': '20:30', 'ativado': false, 'categoria': 'Refeição'},
+    {'titulo': 'Desconexão e Higiene do Sono 😴', 'horario': '22:30', 'ativado': true, 'categoria': 'Descanso'},
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Lembretes e Hábitos'),
+        title: const Text('Minha Rotina Diária', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: ListView(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20),
         children: [
-          const Text('Alertas Automáticos 🔔', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const SizedBox(height: 8),
-          Text('Configure os despertadores internos para blindar a sua rotina e não esquecer os horários clínicos.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-          const SizedBox(height: 32),
+          const Text('Lembretes e Hábitos 🕒', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+          const SizedBox(height: 6),
+          Text('Configure seus alarmes internos para não esquecer nenhuma etapa do seu plano estratégico.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          const SizedBox(height: 24),
 
-          Card(
-            elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: SwitchListTile(
-              title: const Text('Lembrete de Hidratação', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-              subtitle: const Text('Disparar alertas periódicos para ingestão de água.', style: TextStyle(fontSize: 12)),
-              activeColor: AppColors.primarySage,
-              secondary: const CircleAvatar(backgroundColor: Color(0xFFE3F2FD), child: Icon(Icons.water_drop, color: Colors.blue)), // ✅ Corrigido
-              value: _alarmeAgua,
-              onChanged: _alternarAlarmesAgua,
-            ),
-          ),
-          const SizedBox(height: 12),
-
-          Card(
-            elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: SwitchListTile(
-              title: const Text('Horários das Refeições', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
-              subtitle: const Text('Avisar quando for o momento de comer as metas da Nutri.', style: TextStyle(fontSize: 12)),
-              activeColor: AppColors.primarySage,
-              secondary: CircleAvatar(backgroundColor: AppColors.accentPeach.withOpacity(0.15), child: const Icon(Icons.restaurant, color: AppColors.accentPeach)),
-              value: _alarmeRefeicoes,
-              onChanged: _alternarAlarmesRefeicoes,
-            ),
-          ),
+          ..._lembretes.map((alarme) {
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100)),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: alarme['ativado'] ? AppColors.primarySage.withOpacity(0.1) : Colors.grey.shade100,
+                        child: Icon(
+                          alarme['categoria'] == 'Água' ? Icons.water_drop : (alarme['categoria'] == 'Treino' ? Icons.fitness_center : Icons.alarm),
+                          color: alarme['ativado'] ? AppColors.primarySage : Colors.grey, size: 20
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(alarme['titulo'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textDark)),
+                          Text('Disparar às ${alarme['horario']}', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  Switch(
+                    value: alarme['ativado'],
+                    activeColor: AppColors.primarySage,
+                    onChanged: (bool valor) {
+                      setState(() {
+                        alarme['ativado'] = valor;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
         ],
       ),
     );
