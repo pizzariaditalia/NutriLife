@@ -23,6 +23,13 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  flutter_launcher_icons: ^0.13.1  # 🚀 Gerador Automático de Ícones Oficial
+
+# 🎨 Configuração da Logo Oficial do Nutri Life
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "image/icon.png"
 
 flutter:
   uses-material-design: true
