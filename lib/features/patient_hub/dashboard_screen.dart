@@ -113,13 +113,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       builder: (context, userSnapshot) {
         String objetivo = 'Emagrecimento';
         String? fotoPerfilUrl;
-        Map<String, dynamic>? agendaConsulta; // 🚀 VARIÁVEL DA AGENDA
+        Map<String, dynamic>? agendaConsulta;
 
         if (userSnapshot.hasData && userSnapshot.data!.exists) {
           final dadosUser = userSnapshot.data!.data() as Map<String, dynamic>?;
           objetivo = dadosUser?['objetivo'] ?? 'Emagrecimento';
           fotoPerfilUrl = dadosUser?['foto_perfil'];
-          agendaConsulta = dadosUser?['agenda']; // Puxa do Firebase
+          agendaConsulta = dadosUser?['agenda'];
         }
 
         return Scaffold(
@@ -127,8 +127,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
           appBar: AppBar(
             title: const Text('Meu Painel', style: TextStyle(color: Colors.white)), backgroundColor: AppColors.primarySage, elevation: 0,
             actions: [
-              IconButton(icon: const Icon(Icons.search, size: 26, color: Colors.white), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FoodSearchScreen(turno: 'Geral')))),
-              IconButton(icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen()))),
+              // 🚀 SINO DE NOTIFICAÇÃO (Fica vermelho se a nutri marcou consulta recentemente)
+              Badge(
+                isLabelVisible: agendaConsulta != null, // Mock de notificação
+                backgroundColor: Colors.redAccent,
+                child: IconButton(icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(agendaConsulta != null ? 'Nutri enviou atualizações! Confira abaixo.' : 'Tudo lido!')))),
+              ),
+              
+              // 🚀 BOLINHA VERMELHA DO CHAT (Escutando a última mensagem)
+              StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection('chats').doc(_userId).collection('mensagens').orderBy('timestamp', descending: true).limit(1).snapshots(),
+                builder: (context, chatSnap) {
+                  bool temMensagemNova = false;
+                  if (chatSnap.hasData && chatSnap.data!.docs.isNotEmpty) {
+                    final ultima = chatSnap.data!.docs.first.data() as Map<String, dynamic>;
+                    // Se a última msg foi da Nutri, mostra a bolinha vermelha!
+                    if (ultima['remetente'] == 'nutri') { temMensagemNova = true; }
+                  }
+                  return Badge(
+                    isLabelVisible: temMensagemNova,
+                    backgroundColor: Colors.redAccent,
+                    child: IconButton(icon: const Icon(Icons.chat_bubble_outline, size: 24, color: Colors.white), onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ChatScreen()))),
+                  );
+                }
+              ),
               const SizedBox(width: 4),
               GestureDetector(
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen())),
@@ -162,7 +184,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Text('Foco: $objetivo 🎯', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                     const SizedBox(height: 16),
 
-                    // 🚀 O CARD MÁGICO DA CONSULTA APARECE AQUI SE A NUTRI AGENDOU LÁ NA WEB
                     if (agendaConsulta != null && agendaConsulta['data'] != null && agendaConsulta['data'].toString().isNotEmpty)
                       _CardConsulta(data: agendaConsulta['data'], link: agendaConsulta['link']),
                     
@@ -228,64 +249,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
-// 🚀 O CARD DE ALARME DA PRÓXIMA CONSULTA
 class _CardConsulta extends StatelessWidget {
-  final String data;
-  final String? link;
+  final String data; final String? link;
   const _CardConsulta({Key? key, required this.data, this.link}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: const Color(0xFF4F46E5).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))],
-      ),
+      margin: const EdgeInsets.only(bottom: 20), padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(gradient: const LinearGradient(colors: [Color(0xFF6366F1), Color(0xFF4F46E5)], begin: Alignment.topLeft, end: Alignment.bottomRight), borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: const Color(0xFF4F46E5).withOpacity(0.3), blurRadius: 12, offset: const Offset(0, 6))]),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-            child: const Icon(Icons.videocam, color: Colors.white, size: 32),
-          ),
+          Container(padding: const EdgeInsets.all(12), decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle), child: const Icon(Icons.videocam, color: Colors.white, size: 32)),
           const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('SUA PRÓXIMA CONSULTA', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-                const SizedBox(height: 4),
-                Text(data, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
-              ],
-            ),
-          ),
-          if (link != null && link!.isNotEmpty)
-            ElevatedButton(
-              onPressed: () {
-                // Aqui podemos adicionar o url_launcher futuramente. Por enquanto, copiamos o link.
-                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link de acesso liberado na hora da consulta! 🔗'), backgroundColor: Color(0xFF4F46E5)));
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF4F46E5), elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-              child: const Text('Entrar', style: TextStyle(fontWeight: FontWeight.bold)),
-            )
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('SUA PRÓXIMA CONSULTA', style: TextStyle(color: Colors.white70, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.2)), const SizedBox(height: 4), Text(data, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold))])),
+          if (link != null && link!.isNotEmpty) ElevatedButton(onPressed: () { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Link de acesso copiado! 🔗'), backgroundColor: Color(0xFF4F46E5))); }, style: ElevatedButton.styleFrom(backgroundColor: Colors.white, foregroundColor: const Color(0xFF4F46E5), elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), child: const Text('Entrar', style: TextStyle(fontWeight: FontWeight.bold)))
         ],
       ),
     );
   }
 }
 
-// RESTANTE DO CÓDIGO (CARD DE CALORIAS)
 class _CardCaloriasPremium extends StatelessWidget {
-  final int consumido, meta, restante, queimado;
-  final double carbos, proteinas, gorduras;
-  final String objetivo;
+  final int consumido, meta, restante, queimado; final double carbos, proteinas, gorduras; final String objetivo;
   const _CardCaloriasPremium({Key? key, required this.consumido, required this.meta, required this.restante, required this.queimado, required this.carbos, required this.proteinas, required this.gorduras, required this.objetivo}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     double progresso = consumido / (meta + queimado);
     return Container(
       padding: const EdgeInsets.all(20), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
@@ -295,37 +281,17 @@ class _CardCaloriasPremium extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Column(children: [Text('$consumido', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)), const Text('Comido', style: TextStyle(fontSize: 12, color: Colors.grey))]),
-              Stack(
-                alignment: Alignment.center,
-                children: [
-                  SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage)),
-                  Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('$restante', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)), Text(objetivo == 'Hipertrofia' ? 'Faltam' : 'Restam', style: const TextStyle(fontSize: 11, color: Colors.grey))]),
-                ],
-              ),
+              Stack(alignment: Alignment.center, children: [SizedBox(width: 110, height: 110, child: CircularProgressIndicator(value: progresso.clamp(0.0, 1.0), strokeWidth: 10, backgroundColor: Colors.grey.shade100, color: objetivo == 'Hipertrofia' ? AppColors.secondaryMenta : AppColors.primarySage)), Column(mainAxisAlignment: MainAxisAlignment.center, children: [Text('$restante', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)), Text(objetivo == 'Hipertrofia' ? 'Faltam' : 'Restam', style: const TextStyle(fontSize: 11, color: Colors.grey))])]),
               Column(children: [Text('$queimado', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange)), const Text('Treino', style: TextStyle(fontSize: 12, color: Colors.grey))]),
             ],
           ),
           const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta),
-              _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage),
-              _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach),
-            ],
-          ),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [_macro('Carbos', carbos, objetivo == 'Hipertrofia' ? 300 : 200, AppColors.secondaryMenta), _macro('Proteínas', proteinas, objetivo == 'Hipertrofia' ? 180 : 130, AppColors.primarySage), _macro('Gorduras', gorduras, objetivo == 'Hipertrofia' ? 80 : 65, AppColors.accentPeach)]),
         ],
       ),
     );
   }
-
   Widget _macro(String nome, double atual, double alvo, Color cor) {
-    return Column(
-      children: [
-        Text(nome, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)), const SizedBox(height: 6),
-        Container(width: 65, height: 6, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)), child: FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: (atual / alvo).clamp(0.0, 1.0), child: Container(decoration: BoxDecoration(color: cor, borderRadius: BorderRadius.circular(10))))),
-        const SizedBox(height: 6), Text('${atual.toInt()}/${alvo.toInt()}g', style: const TextStyle(fontSize: 11, color: Colors.grey)),
-      ],
-    );
+    return Column(children: [Text(nome, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)), const SizedBox(height: 6), Container(width: 65, height: 6, decoration: BoxDecoration(color: Colors.grey.shade100, borderRadius: BorderRadius.circular(10)), child: FractionallySizedBox(alignment: Alignment.centerLeft, widthFactor: (atual / alvo).clamp(0.0, 1.0), child: Container(decoration: BoxDecoration(color: cor, borderRadius: BorderRadius.circular(10))))), const SizedBox(height: 6), Text('${atual.toInt()}/${alvo.toInt()}g', style: const TextStyle(fontSize: 11, color: Colors.grey))]);
   }
 }
