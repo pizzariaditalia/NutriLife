@@ -29,15 +29,12 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
       'historico_alimentos': FieldValue.arrayRemove([alimento]),
       'calorias_consumidas': FieldValue.increment(-(alimento['calorias'] ?? 0)),
     });
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alimento removido. 🗑️')));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alimento removido da contagem. 🗑️')));
   }
 
-  // 🤖 CHAMA O MODAL DA INTELIGÊNCIA ARTIFICIAL
   void _chamarSubstituicaoIA(BuildContext context, String turno, String prescricao) {
     showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (context) => _BotaoIAModal(turno: turno, prescricao: prescricao),
     );
   }
@@ -49,7 +46,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Meu Cardápio', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Meu Diário Exato', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
       ),
@@ -76,13 +73,22 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
                 children: [
                   const Text('Prescrição de Hoje 📋', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
                   const SizedBox(height: 6),
-                  Text('Siga as orientações da Nutri ou use a IA para fazer substituições inteligentes.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  Text('Registre exatamente o que consumiu para garantir a contagem correta de calorias.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                   const SizedBox(height: 24),
 
-                  _buildSecaoRefeicao('Café da Manhã', Icons.wb_twilight, planoAlimentar['cafe'], alimentosConsumidos, dataHoje),
-                  _buildSecaoRefeicao('Almoço', Icons.wb_sunny, planoAlimentar['almoco'], alimentosConsumidos, dataHoje),
-                  _buildSecaoRefeicao('Lanche', Icons.apple, planoAlimentar['lanche'], alimentosConsumidos, dataHoje),
-                  _buildSecaoRefeicao('Jantar', Icons.nights_stay, planoAlimentar['jantar'], alimentosConsumidos, dataHoje),
+                  _buildSecaoRefeicao('Café da Manhã', Icons.wb_twilight, planoAlimentar['cafe'], alimentosConsumidos, dataHoje, isExtra: false),
+                  _buildSecaoRefeicao('Almoço', Icons.wb_sunny, planoAlimentar['almoco'], alimentosConsumidos, dataHoje, isExtra: false),
+                  _buildSecaoRefeicao('Lanche', Icons.apple, planoAlimentar['lanche'], alimentosConsumidos, dataHoje, isExtra: false),
+                  _buildSecaoRefeicao('Jantar', Icons.nights_stay, planoAlimentar['jantar'], alimentosConsumidos, dataHoje, isExtra: false),
+                  
+                  // 🚀 SEÇÃO DE REFEIÇÕES EXTRAS (LIBERDADE PARA O PACIENTE)
+                  const Padding(padding: EdgeInsets.symmetric(vertical: 16), child: Divider()),
+                  const Text('Furos na Dieta? 🍔', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                  const SizedBox(height: 6),
+                  Text('Anotar as escapadas ajuda a sua Nutri a ajustar os cálculos. Seja sincero!', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  const SizedBox(height: 16),
+                  
+                  _buildSecaoRefeicao('Refeição Extra', Icons.fastfood_outlined, null, alimentosConsumidos, dataHoje, isExtra: true),
                   
                   const SizedBox(height: 40),
                 ],
@@ -94,16 +100,20 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
     );
   }
 
-  Widget _buildSecaoRefeicao(String turno, IconData icone, String? prescricao, List<dynamic> todosConsumidos, String dataHoje) {
+  Widget _buildSecaoRefeicao(String turno, IconData icone, String? prescricao, List<dynamic> todosConsumidos, String dataHoje, {required bool isExtra}) {
     final consumidosNesteTurno = todosConsumidos.where((a) => a['turno'] == turno).toList();
     int caloriasTurno = consumidosNesteTurno.fold(0, (soma, item) => soma + ((item['calorias'] ?? 0) as int));
     bool temPrescricao = prescricao != null && prescricao.trim().isNotEmpty;
+
+    // Cores dinâmicas para a seção Extra
+    Color corPrincipal = isExtra ? Colors.orange : AppColors.primarySage;
+    Color corFundo = isExtra ? Colors.orange.shade50 : AppColors.primarySage.withOpacity(0.08);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white, borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.grey.shade200),
+        border: Border.all(color: isExtra ? Colors.orange.shade200 : Colors.grey.shade200),
         boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
       ),
       child: Column(
@@ -111,43 +121,39 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.primarySage.withOpacity(0.08), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+            decoration: BoxDecoration(color: corFundo, borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(children: [Icon(icone, color: AppColors.primarySage, size: 24), const SizedBox(width: 10), Text(turno, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark))]),
-                Text('$caloriasTurno kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentPeach)),
+                Row(children: [Icon(icone, color: corPrincipal, size: 24), const SizedBox(width: 10), Text(turno, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark))]),
+                Text('$caloriasTurno kcal', style: TextStyle(fontWeight: FontWeight.bold, color: isExtra ? Colors.redAccent : AppColors.accentPeach)),
               ],
             ),
           ),
           
-          Container(
-            width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(children: [const Icon(Icons.assignment, size: 14, color: Colors.grey), const SizedBox(width: 6), Text('PRESCRIÇÃO DA NUTRI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5))]),
-                    // 🚀 BOTÃO DE IA APARECE AQUI SE TIVER DIETA
-                    if (temPrescricao)
-                      GestureDetector(
-                        onTap: () => _chamarSubstituicaoIA(context, turno, prescricao),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.purple.shade100)),
-                          child: Row(children: const [Icon(Icons.auto_awesome, color: Colors.purple, size: 12), SizedBox(width: 4), Text('Substituir', style: TextStyle(color: Colors.purple, fontSize: 10, fontWeight: FontWeight.bold))]),
-                        ),
-                      )
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(temPrescricao ? prescricao : 'Nenhuma orientação específica.', style: TextStyle(color: temPrescricao ? AppColors.textDark : Colors.grey.shade400, fontSize: 13, height: 1.4, fontStyle: temPrescricao ? FontStyle.normal : FontStyle.italic)),
-              ],
+          if (!isExtra)
+            Container(
+              width: double.infinity, padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(children: [const Icon(Icons.assignment, size: 14, color: Colors.grey), const SizedBox(width: 6), Text('PRESCRIÇÃO DA NUTRI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5))]),
+                      if (temPrescricao)
+                        GestureDetector(
+                          onTap: () => _chamarSubstituicaoIA(context, turno, prescricao),
+                          child: Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.purple.shade100)), child: Row(children: const [Icon(Icons.auto_awesome, color: Colors.purple, size: 12), SizedBox(width: 4), Text('Substituir', style: TextStyle(color: Colors.purple, fontSize: 10, fontWeight: FontWeight.bold))])),
+                        )
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(temPrescricao ? prescricao : 'Nenhuma orientação específica.', style: TextStyle(color: temPrescricao ? AppColors.textDark : Colors.grey.shade400, fontSize: 13, height: 1.4, fontStyle: temPrescricao ? FontStyle.normal : FontStyle.italic)),
+                ],
+              ),
             ),
-          ),
 
           if (consumidosNesteTurno.isNotEmpty)
             Padding(
@@ -160,7 +166,7 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
                     subtitle: Text('${alimento['quantidade']}x ${alimento['medida_escolhida']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: [Text('${alimento['calorias']} kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 13)), IconButton(icon: const Icon(Icons.close, color: Colors.redAccent, size: 18), onPressed: () => _deletarAlimento(alimento, dataHoje))]
+                      children: [Text('${alimento['calorias']} kcal', style: TextStyle(fontWeight: FontWeight.bold, color: isExtra ? Colors.redAccent : AppColors.textDark, fontSize: 13)), IconButton(icon: const Icon(Icons.close, color: Colors.redAccent, size: 18), onPressed: () => _deletarAlimento(alimento, dataHoje))]
                     ),
                   );
                 }).toList(),
@@ -173,8 +179,8 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
               width: double.infinity,
               child: TextButton.icon(
                 onPressed: () => _abrirBuscaAlimentos(turno),
-                icon: const Icon(Icons.add_circle_outline, color: AppColors.primarySage),
-                label: Text('Registrar consumo', style: const TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                icon: Icon(Icons.add_circle_outline, color: corPrincipal),
+                label: Text(isExtra ? 'Registrar extra' : 'Registrar consumo', style: TextStyle(color: corPrincipal, fontWeight: FontWeight.bold)),
                 style: TextButton.styleFrom(backgroundColor: AppColors.backgroundCreme, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
               ),
             ),
@@ -185,101 +191,35 @@ class _MealDiaryScreenState extends State<MealDiaryScreen> {
   }
 }
 
-// ==========================================
-// 🤖 WIDGET DO MODAL DA INTELIGÊNCIA ARTIFICIAL
-// ==========================================
+// MODAL DA IA MANTIDO INTACTO
 class _BotaoIAModal extends StatefulWidget {
-  final String turno;
-  final String prescricao;
+  final String turno; final String prescricao;
   const _BotaoIAModal({Key? key, required this.turno, required this.prescricao}) : super(key: key);
-
-  @override
-  State<_BotaoIAModal> createState() => _BotaoIAModalState();
+  @override State<_BotaoIAModal> createState() => _BotaoIAModalState();
 }
-
 class _BotaoIAModalState extends State<_BotaoIAModal> {
-  bool _isThinking = true;
-  String _respostaIA = "";
-
-  @override
-  void initState() {
-    super.initState();
-    _simularProcessamentoIA();
-  }
-
+  bool _isThinking = true; String _respostaIA = "";
+  @override void initState() { super.initState(); _simularProcessamentoIA(); }
   void _simularProcessamentoIA() async {
-    // Simula o tempo do Gemini lendo a dieta (2.5 segundos)
     await Future.delayed(const Duration(milliseconds: 2500));
     if (mounted) {
       setState(() {
         _isThinking = false;
-        // Resposta baseada no turno
-        if (widget.turno == 'Café da Manhã' || widget.turno == 'Lanche') {
-          _respostaIA = "Opção 1: Troque o pão por 30g de Tapioca com Ovos Mexidos.\nOpção 2: 150g de Mamão com 2 colheres de Aveia em Flocos.";
-        } else {
-          _respostaIA = "Opção 1: Troque o arroz por 120g de Batata Doce Assada.\nOpção 2: Troque o frango por 150g de Filé de Tilápia ou 3 Ovos Inteiros.";
-        }
+        if (widget.turno == 'Café da Manhã' || widget.turno == 'Lanche') { _respostaIA = "Opção 1: Troque o pão por 30g de Tapioca com Ovos Mexidos.\nOpção 2: 150g de Mamão com 2 colheres de Aveia em Flocos."; } else { _respostaIA = "Opção 1: Troque o arroz por 120g de Batata Doce Assada.\nOpção 2: Troque o frango por 150g de Filé de Tilápia ou 3 Ovos Inteiros."; }
       });
     }
   }
-
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.purple.shade50, shape: BoxShape.circle), child: const Icon(Icons.auto_awesome, color: Colors.purple)),
-              const SizedBox(width: 12),
-              const Text('IA Nutricional', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-            ],
-          ),
+          Row(children: [Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: Colors.purple.shade50, shape: BoxShape.circle), child: const Icon(Icons.auto_awesome, color: Colors.purple)), const SizedBox(width: 12), const Text('IA Nutricional', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textDark))]),
           const SizedBox(height: 24),
-          
-          if (_isThinking)
-            Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  children: [
-                    const CircularProgressIndicator(color: Colors.purple),
-                    const SizedBox(height: 16),
-                    Text('Analisando sua prescrição e calculando macronutrientes equivalentes...', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic)),
-                  ],
-                ),
-              ),
-            )
-          else
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.purple.shade100)),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Sugestões de Troca (Mesmas Calorias):', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
-                  const SizedBox(height: 12),
-                  Text(_respostaIA, style: const TextStyle(color: AppColors.textDark, height: 1.5)),
-                  const SizedBox(height: 16),
-                  const Text('⚠️ Lembre-se: Use estas sugestões apenas em emergências. O ideal é seguir o plano da Nutri!', style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ),
-          
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () => Navigator.pop(context),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              child: const Text('Entendi, fechar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
-          ),
-          const SizedBox(height: 24),
+          if (_isThinking) Center(child: Padding(padding: const EdgeInsets.all(32.0), child: Column(children: [const CircularProgressIndicator(color: Colors.purple), const SizedBox(height: 16), Text('Analisando sua prescrição e calculando macronutrientes equivalentes...', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade600, fontStyle: FontStyle.italic))]),))
+          else Container(padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.purple.shade100)), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Sugestões de Troca (Mesmas Calorias):', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)), const SizedBox(height: 12), Text(_respostaIA, style: const TextStyle(color: AppColors.textDark, height: 1.5)), const SizedBox(height: 16), const Text('⚠️ Lembre-se: Use estas sugestões apenas em emergências. O ideal é seguir o plano da Nutri!', style: TextStyle(fontSize: 11, color: Colors.orange, fontWeight: FontWeight.bold))])),
+          const SizedBox(height: 24), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: () => Navigator.pop(context), style: ElevatedButton.styleFrom(backgroundColor: Colors.purple, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: const Text('Entendi, fechar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))), const SizedBox(height: 24),
         ],
       ),
     );
