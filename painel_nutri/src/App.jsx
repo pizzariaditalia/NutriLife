@@ -23,6 +23,8 @@ const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" heig
 const IconLoader = () => <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
+const IconCamera = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>;
+const IconCheckCircle = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>;
 
 // ==========================================
 // 🍎 BANCO DE DADOS LOCAL
@@ -54,13 +56,9 @@ const TelaLogin = () => {
   const fazerLogin = async (e) => {
     e.preventDefault();
     setCarregando(true); setErro('');
-    try {
-      await signInWithEmailAndPassword(auth, email, senha);
-    } catch (error) {
-      setErro('Acesso negado. E-mail ou senha incorretos.');
-    } finally {
-      setCarregando(false);
-    }
+    try { await signInWithEmailAndPassword(auth, email, senha); } 
+    catch (error) { setErro('Acesso negado. E-mail ou senha incorretos.'); } 
+    finally { setCarregando(false); }
   };
 
   return (
@@ -86,6 +84,13 @@ const TelaLogin = () => {
 export default function App() {
   const [usuarioNutri, setUsuarioNutri] = useState(null);
   const [verificandoAuth, setVerificandoAuth] = useState(true);
+
+  // 🔔 ESTADOS GLOBAIS DE ALERTAS E MODAIS
+  const [toast, setToast] = useState({ show: false, msg: '', type: 'success' });
+  const [confirmModal, setConfirmModal] = useState({ show: false, msg: '', action: null });
+
+  // 🔴 NOTIFICAÇÕES (BADGES)
+  const [temMensagemNova, setTemMensagemNova] = useState(false);
 
   const [abaAtiva, setAbaAtiva] = useState('dashboard'); 
   const [subAbaPaciente, setSubAbaPaciente] = useState('resumo'); 
@@ -132,6 +137,18 @@ export default function App() {
 
   const dataHoje = new Date().toISOString().split('T')[0];
 
+  // ==========================================
+  // 🔔 FUNÇÕES DE ALERTA PERSONALIZADAS
+  // ==========================================
+  const showToast = (msg, type = 'success') => {
+    setToast({ show: true, msg, type });
+    setTimeout(() => setToast({ show: false, msg: '', type: 'success' }), 3000);
+  };
+
+  const showConfirm = (msg, action) => {
+    setConfirmModal({ show: true, msg, action });
+  };
+
   // 🚀 ESCUTA AUTENTICAÇÃO
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -145,7 +162,6 @@ export default function App() {
   useEffect(() => {
     if (!usuarioNutri) return; 
     
-    // Busca Perfil da Nutricionista
     const unsubPerfil = onSnapshot(doc(db, 'nutricionistas', usuarioNutri.uid), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
@@ -169,6 +185,31 @@ export default function App() {
     return () => { unsubPerfil(); unsubPacientes(); unsubFeed(); unsubModelos(); };
   }, [usuarioNutri]);
 
+  // 🔴 ESCUTA DE NOTIFICAÇÕES GLOBAIS (Mensagens de Pacientes)
+  useEffect(() => {
+    if (!usuarioNutri || pacientes.length === 0) return;
+    
+    // Simplificando: verificamos se há atividade recente nos chats. 
+    // Em um app de produção, você criaria uma collection 'notificacoes', mas isso resolve o MVP.
+    let unsubscribeList = [];
+    let foundUnread = false;
+
+    pacientes.forEach(p => {
+      const unsub = onSnapshot(query(collection(db, 'chats', p.id, 'mensagens'), orderBy('timestamp', 'desc'), limit(1)), (snap) => {
+        if (!snap.empty) {
+          const ultima = snap.docs[0].data();
+          if (ultima.remetente === 'paciente') {
+            setTemMensagemNova(true);
+          }
+        }
+      });
+      unsubscribeList.push(unsub);
+    });
+
+    return () => unsubscribeList.forEach(fn => fn());
+  }, [pacientes, usuarioNutri]);
+
+
   useEffect(() => {
     if (!pacienteSelecionado) return;
     if (pacienteSelecionado.plano_alimentar) {
@@ -179,7 +220,6 @@ export default function App() {
     } else {
       setPlanoCafe(""); setPlanoAlmoco(""); setPlanoLanche(""); setPlanoJantar("");
     }
-    
     setNotasInternas(pacienteSelecionado.notas_nutri || "");
     setDataConsulta(pacienteSelecionado.agenda?.data || "");
     setLinkConsulta(pacienteSelecionado.agenda?.link || "");
@@ -208,6 +248,8 @@ export default function App() {
 
   useEffect(() => {
     if (abaAtiva === 'chat' && pacienteChatSelecionado) {
+      // Se abrir o chat do paciente, removemos a notificação visual geral temporariamente (simplificado)
+      setTemMensagemNova(false); 
       return onSnapshot(query(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), orderBy('timestamp', 'asc')), (snapshot) => {
         setMensagensChat(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       });
@@ -233,8 +275,7 @@ export default function App() {
           }));
           setResultadosBusca(prev => {
             const combinada = [...prev, ...apiMapeada];
-            const unicos = combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i);
-            return unicos;
+            return combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i);
           });
         }
       } catch (e) { console.error(e); } finally { setBuscandoAPI(false); }
@@ -244,7 +285,34 @@ export default function App() {
 
   const trocarAba = (aba) => { setAbaAtiva(aba); setMenuMobileAberto(false); if(aba !== 'pacientes') setPacienteSelecionado(null); };
 
-  // 👩‍⚕️ SALVAR PERFIL DA NUTRICIONISTA
+  // 🖼️ COMPRESSÃO E UPLOAD DE IMAGEM DA NUTRICIONISTA (BASE64)
+  const processarUploadFoto = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Se o arquivo for muito grande, o Firestore recusa. Vamos comprimir com Canvas HTML5.
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_WIDTH = 400; // Tamanho ideal para avatar
+        const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH;
+        canvas.height = img.height * scaleSize;
+        
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Converte para Base64 comprimido (JPEG 70% qualidade)
+        const base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
+        setFotoNutri(base64Comprimido);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const salvarPerfilProfissional = async (e) => {
     e.preventDefault();
     setSalvandoPerfil(true);
@@ -252,13 +320,15 @@ export default function App() {
       await setDoc(doc(db, 'nutricionistas', usuarioNutri.uid), {
         nome: nomeNutri, crn: crnNutri, foto: fotoNutri, atualizadoEm: serverTimestamp()
       }, { merge: true });
-      alert("✅ Perfil atualizado com sucesso!");
-    } catch (error) { alert("Erro ao salvar perfil."); }
+      showToast("Perfil atualizado com sucesso!");
+    } catch (error) { showToast("Erro ao salvar perfil.", "error"); }
     setSalvandoPerfil(false);
   };
 
-  const excluirPaciente = async (id) => {
-    if(window.confirm("ALERTA: Excluir paciente?")) { try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); } catch(e) {} }
+  const excluirPaciente = (id) => {
+    showConfirm("Tem certeza que deseja excluir este paciente e todo o seu histórico?", async () => {
+      try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); showToast("Paciente excluído."); } catch(e) { showToast("Erro ao excluir.", "error"); }
+    });
   };
 
   const salvarPlanoEMetas = async (e) => {
@@ -267,29 +337,35 @@ export default function App() {
     try {
       await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { plano_alimentar: { cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar } });
       await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), { meta_calorias: Number(novaMetaCalorias), meta_agua: Number(novaMetaAgua) });
-      alert("✅ Cardápio salvo!");
-    } catch (e) {}
+      showToast("Cardápio e metas salvos no aplicativo!");
+    } catch (e) { showToast("Erro ao salvar cardápio.", "error"); }
   };
 
   const salvarNotasEAgenda = async () => {
-    try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } }); alert("✅ Dados salvos!"); } catch(e) {}
+    try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } }); showToast("Dados internos e agenda salvos!"); } 
+    catch(e) { showToast("Erro ao salvar dados.", "error"); }
   };
 
   const salvarNovoModelo = async (e) => {
     e.preventDefault();
     if (novoModeloNome.trim() === "") return;
-    try { await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() }); setNovoModeloNome(""); alert("✅ Salvo!"); } catch (e) {}
+    try { await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() }); setNovoModeloNome(""); showToast("Modelo salvo no banco!"); } 
+    catch (e) { showToast("Erro ao salvar modelo.", "error"); }
   };
 
-  const excluirModelo = async (id) => { if(window.confirm("Apagar modelo?")) { await deleteDoc(doc(db, 'modelos_dieta', id)); } };
+  const excluirModelo = (id) => { 
+    showConfirm("Apagar este modelo de dieta permanentemente?", async () => {
+      await deleteDoc(doc(db, 'modelos_dieta', id));
+      showToast("Modelo apagado.");
+    }); 
+  };
 
   const aplicarModelo = (modeloId) => {
     if(modeloId === "") return;
     const modelo = modelosDieta.find(m => m.id === modeloId);
-    if(modelo) { setPlanoCafe(modelo.cafe || ""); setPlanoAlmoco(modelo.almoco || ""); setPlanoLanche(modelo.lanche || ""); setPlanoJantar(modelo.jantar || ""); }
+    if(modelo) { setPlanoCafe(modelo.cafe || ""); setPlanoAlmoco(modelo.almoco || ""); setPlanoLanche(modelo.lanche || ""); setPlanoJantar(modelo.jantar || ""); showToast("Modelo importado para os campos."); }
   };
 
-  // 🚀 PUBLICAÇÃO CARIMBADA COM O NOME DA NUTRI
   const publicarNoFeed = async (e) => {
     e.preventDefault();
     if (novoPostTexto.trim() === "") return;
@@ -301,9 +377,15 @@ export default function App() {
       timestamp: serverTimestamp() 
     });
     setNovoPostTexto("");
+    showToast("Postagem enviada ao mural dos pacientes!");
   };
 
-  const excluirPost = async (id) => { if(window.confirm("Apagar post?")) { await deleteDoc(doc(db, 'feed', id)); } };
+  const excluirPost = (id) => { 
+    showConfirm("Apagar esta postagem do Feed?", async () => {
+      await deleteDoc(doc(db, 'feed', id));
+      showToast("Postagem apagada.");
+    }); 
+  };
 
   const enviarMensagemChat = async (e) => {
     e.preventDefault();
@@ -338,6 +420,29 @@ export default function App() {
         @media print { aside, .no-print, header button, .md\\:hidden { display: none !important; } main { padding: 0 !important; overflow: visible !important; height: auto !important; } .bg-\\[\\#F9F6F0\\] { background: white !important; } .shadow-sm { box-shadow: none !important; border: 1px solid #eee !important; } textarea { border: none !important; resize: none !important; height: auto !important; overflow: hidden !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .print-header { display: block !important; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #3B4D43; padding-bottom: 10px; } } .print-header { display: none; }
       `}</style>
 
+      {/* 🔔 SISTEMA DE TOAST (ALERTA ELEGANTE) */}
+      {toast.show && (
+        <div className={`fixed top-6 right-6 z-[100] animate-fade-in flex items-center gap-3 px-6 py-4 rounded-2xl shadow-xl font-bold text-sm ${toast.type === 'error' ? 'bg-red-600 text-white' : 'bg-[#3B4D43] text-white'}`}>
+          {toast.type === 'error' ? <IconAlert /> : <IconCheckCircle />}
+          {toast.msg}
+        </div>
+      )}
+
+      {/* ⚠️ MODAL DE CONFIRMAÇÃO */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full animate-fade-in text-center">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4"><IconAlert /></div>
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Atenção</h3>
+            <p className="text-gray-500 text-sm mb-8">{confirmModal.msg}</p>
+            <div className="flex gap-3">
+              <button onClick={() => setConfirmModal({show: false, msg: '', action: null})} className="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+              <button onClick={() => { confirmModal.action(); setConfirmModal({show: false, msg: '', action: null}); }} className="flex-1 bg-red-600 text-white font-bold py-3 rounded-xl hover:bg-red-700 transition">Sim, confirmar</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {menuMobileAberto && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setMenuMobileAberto(false)} />}
 
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#3B4D43] text-white flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl md:shadow-none ${menuMobileAberto ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -352,23 +457,29 @@ export default function App() {
               { id: 'pacientes', label: 'Pacientes', icon: <IconUsers /> }, 
               { id: 'templates', label: 'Banco de Dietas', icon: <IconFileText /> }, 
               { id: 'feed', label: 'Gestão do Feed', icon: <IconMegaphone /> }, 
-              { id: 'chat', label: 'Consultório', icon: <IconMessage /> },
-              { id: 'perfil', label: 'Meu Perfil', icon: <IconUser /> } // 🚀 NOVA ABA
+              { id: 'chat', label: 'Consultório', icon: <IconMessage />, badge: temMensagemNova }, // 🔴 BOLINHA AQUI
+              { id: 'perfil', label: 'Meu Perfil', icon: <IconUser /> }
             ].map(item => (
-              <button key={item.id} onClick={() => trocarAba(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>{item.icon}<span className="text-sm">{item.label}</span></button>
+              <button key={item.id} onClick={() => trocarAba(item.id)} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+                <div className="flex items-center gap-3">{item.icon}<span className="text-sm">{item.label}</span></div>
+                {item.badge && <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-sm animate-pulse"></span>}
+              </button>
             ))}
           </nav>
         </div>
         <div className="border-t border-white/10 pt-6 flex flex-col gap-4">
           <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl font-bold text-red-400 hover:bg-red-500/10 transition-all duration-200 text-left"><IconLogOut /><span className="text-sm">Sair da Conta</span></button>
-          <div className="text-xs text-white/40 flex justify-between items-center px-2"><span>v6.5 Profissional</span><span>Admin</span></div>
+          <div className="text-xs text-white/40 flex justify-between items-center px-2"><span>v7.0 Master</span><span>Admin</span></div>
         </div>
       </aside>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden w-full relative">
         <div className="md:hidden flex items-center justify-between bg-white border-b border-gray-200 px-6 py-4 z-30">
           <div className="flex items-center gap-2 text-[#3B4D43]"><IconLeaf /><span className="font-bold">Nutri Pro</span></div>
-          <button onClick={() => setMenuMobileAberto(true)} className="text-gray-600 focus:outline-none p-1"><IconMenu /></button>
+          <div className="flex items-center gap-4">
+            {temMensagemNova && <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>}
+            <button onClick={() => setMenuMobileAberto(true)} className="text-gray-600 focus:outline-none p-1"><IconMenu /></button>
+          </div>
         </div>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
@@ -383,39 +494,49 @@ export default function App() {
                 <div className="bg-gradient-to-br from-[#3B4D43] to-[#2C3E35] p-6 rounded-2xl shadow-sm flex items-start flex-col gap-4 text-white"><div className="bg-white/20 p-3 rounded-xl"><IconTrophy /></div><div><p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mb-1">Impacto Global Estimado</p><p className="text-2xl font-bold text-white mt-1">+ {pacientes.length * 2.5} kg eliminados</p></div></div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div><ul className="space-y-3">{pacientes.slice(0, 3).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento</p></div><button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}</ul></div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div><ul className="space-y-3">{pacientes.slice(0, 3).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Verificar engajamento</p></div><button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}</ul></div>
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div><ul className="space-y-3">{pacientes.slice(0, 2).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas perfeitamente</p></div><span className="text-xl">🔥</span></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Dados insuficientes.</p>}</ul></div>
               </div>
             </div>
           )}
 
           {/* =========================================
-              🚀 NOVA ABA: PERFIL DA NUTRICIONISTA
+              🚀 ABA: PERFIL DA NUTRICIONISTA (UPLOAD DE FOTO)
           ========================================= */}
           {abaAtiva === 'perfil' && (
             <div className="animate-fade-in max-w-4xl mx-auto no-print">
               <header className="mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Meu Perfil Profissional</h2>
-                <p className="text-gray-500 text-sm mt-1">Configure como os pacientes verão você no aplicativo.</p>
+                <p className="text-gray-500 text-sm mt-1">Configure sua imagem e dados clínicos.</p>
               </header>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <form onSubmit={salvarPerfilProfissional} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit">
+                  
+                  {/* UPLOAD DE FOTO MODERNO */}
+                  <div className="mb-6 flex items-center gap-6">
+                    <div className="w-20 h-20 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
+                      {fotoNutri ? <img src={fotoNutri} alt="Perfil" className="w-full h-full object-cover"/> : <IconUser />}
+                    </div>
+                    <div className="flex-1">
+                      <label className="cursor-pointer bg-gray-50 hover:bg-gray-100 border border-dashed border-gray-300 rounded-xl p-3 flex flex-col items-center justify-center transition-colors">
+                        <IconCamera />
+                        <span className="text-xs font-bold text-gray-500 mt-1 uppercase tracking-wider">Escolher da Galeria</span>
+                        <input type="file" accept="image/*" className="hidden" onChange={processarUploadFoto} />
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="mb-6">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nome Completo</label>
                     <input type="text" placeholder="Ex: Dra. Marcela Silva" value={nomeNutri} onChange={(e) => setNomeNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" required />
                   </div>
-                  <div className="mb-6">
+                  <div className="mb-8">
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Número do CRN</label>
                     <input type="text" placeholder="Ex: CRN-3 12345" value={crnNutri} onChange={(e) => setCrnNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" />
                   </div>
-                  <div className="mb-8">
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Link da Foto (URL)</label>
-                    <input type="url" placeholder="https://exemplo.com/sua-foto.jpg" value={fotoNutri} onChange={(e) => setFotoNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" />
-                    <p className="text-[10px] text-gray-400 mt-2">Cole o link público de uma imagem sua (do seu Instagram, LinkedIn, etc).</p>
-                  </div>
                   <button type="submit" disabled={salvandoPerfil} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition">
-                    {salvandoPerfil ? 'Salvando...' : 'Atualizar Meu Perfil'}
+                    {salvandoPerfil ? 'Salvando...' : 'Salvar Perfil'}
                   </button>
                 </form>
 
@@ -429,7 +550,9 @@ export default function App() {
                   
                   <div className="w-full bg-white p-4 rounded-xl shadow-sm text-left opacity-70">
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden">{fotoNutri && <img src={fotoNutri} alt="P" className="w-full h-full object-cover"/>}</div>
+                      <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center">
+                        {fotoNutri ? <img src={fotoNutri} alt="P" className="w-full h-full object-cover"/> : <IconUser />}
+                      </div>
                       <div><p className="text-xs font-bold text-gray-800">{nomeNutri || "Nutricionista Oficial"}</p><p className="text-[9px] text-gray-400 uppercase">Post Oficial</p></div>
                     </div>
                     <p className="text-xs text-gray-600">Olá pacientes, bebam água!</p>
@@ -548,7 +671,9 @@ export default function App() {
                   <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-2">
-                        {post.foto_autor ? <img src={post.foto_autor} alt="A" className="w-5 h-5 rounded-full object-cover"/> : <div className="bg-gray-100 p-1 rounded-full"><IconUser /></div>}
+                        <div className="w-6 h-6 rounded-full bg-gray-100 overflow-hidden flex items-center justify-center shrink-0">
+                           {post.foto_autor ? <img src={post.foto_autor} alt="A" className="w-full h-full object-cover"/> : <IconUser />}
+                        </div>
                         <span className="text-[10px] text-gray-500 font-bold uppercase">{post.autor}</span>
                       </div>
                       <p className="text-sm text-gray-700">{post.texto}</p>
