@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/theme/app_colors.dart';
+import 'package:nutri_life/core/theme/app_colors.dart';
 
 class GroceryListScreen extends StatefulWidget {
   const GroceryListScreen({Key? key}) : super(key: key);
@@ -11,41 +11,45 @@ class GroceryListScreen extends StatefulWidget {
 }
 
 class _GroceryListScreenState extends State<GroceryListScreen> {
-  final TextEditingController _itemController = TextEditingController();
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+  
+  // Lista local para guardar o que já foi colocado no carrinho
+  final Set<String> _itensNoCarrinho = {};
 
-  void _adicionarItem() async {
-    if (_itemController.text.trim().isEmpty) return;
+  // Função mágica que pega os textos da dieta e transforma numa lista limpa
+  List<String> _gerarListaDeCompras(Map<String, dynamic>? plano) {
+    if (plano == null) return [];
+    
+    String textoCompleto = "";
+    if (plano['cafe'] != null) textoCompleto += "${plano['cafe']}\n";
+    if (plano['almoco'] != null) textoCompleto += "${plano['almoco']}\n";
+    if (plano['lanche'] != null) textoCompleto += "${plano['lanche']}\n";
+    if (plano['jantar'] != null) textoCompleto += "${plano['jantar']}\n";
 
-    await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(_userId)
-        .collection('lista_compras')
-        .add({
-      'nome': _itemController.text.trim(),
-      'comprado': false,
-      'timestamp': FieldValue.serverTimestamp(),
+    // Quebra o texto por linhas e remove linhas vazias ou textos inúteis
+    List<String> linhas = textoCompleto.split('\n');
+    List<String> itensLimpos = [];
+
+    for (String linha in linhas) {
+      String item = linha.replaceAll('•', '').trim();
+      if (item.isNotEmpty && item.length > 3) {
+        // Evita itens duplicados na lista do mercado
+        if (!itensLimpos.contains(item)) {
+          itensLimpos.add(item);
+        }
+      }
+    }
+    return itensLimpos;
+  }
+
+  void _alternarCarrinho(String item) {
+    setState(() {
+      if (_itensNoCarrinho.contains(item)) {
+        _itensNoCarrinho.remove(item);
+      } else {
+        _itensNoCarrinho.add(item);
+      }
     });
-
-    _itemController.clear();
-  }
-
-  void _alternarStatus(String docId, bool statusAtual) async {
-    await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(_userId)
-        .collection('lista_compras')
-        .doc(docId)
-        .update({'comprado': !statusAtual});
-  }
-
-  void _deletarItem(String docId) async {
-    await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(_userId)
-        .collection('lista_compras')
-        .doc(docId)
-        .delete();
   }
 
   @override
@@ -53,110 +57,117 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Lista de Compras', style: TextStyle(color: Colors.white)),
+        title: const Text('Lista de Compras', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: Column(
-        children: [
-          // BARRA DE ADICIONAR
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: AppColors.primarySage,
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _itemController,
-                    decoration: InputDecoration(
-                      hintText: 'Adicionar produto (ex: Aveia)',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    ),
-                    onSubmitted: (_) => _adicionarItem(),
-                  ),
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator(color: AppColors.primarySage));
+          }
+
+          final dadosUser = snapshot.data!.data() as Map<String, dynamic>?;
+          final planoAlimentar = dadosUser?['plano_alimentar'] as Map<String, dynamic>?;
+          
+          List<String> listaDoMercado = _gerarListaDeCompras(planoAlimentar);
+
+          if (listaDoMercado.isEmpty) {
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(32.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.shopping_basket_outlined, size: 80, color: Colors.grey.shade300),
+                    const SizedBox(height: 16),
+                    Text('Sua lista está vazia!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
+                    const SizedBox(height: 8),
+                    Text('Aguarde sua nutricionista enviar o plano alimentar. Nós vamos gerar sua lista de compras automaticamente aqui.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)),
+                  ],
                 ),
-                const SizedBox(width: 12),
-                InkWell(
-                  onTap: _adicionarItem,
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.add_shopping_cart, color: AppColors.primarySage),
-                  ),
-                )
-              ],
-            ),
-          ),
+              ),
+            );
+          }
 
-          // LISTA DO FIREBASE
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('usuarios')
-                  .doc(_userId)
-                  .collection('lista_compras')
-                  .orderBy('timestamp', descending: true)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator(color: AppColors.primarySage));
-                }
+          int itensPendentes = listaDoMercado.length - _itensNoCarrinho.length;
 
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.grey.shade300),
-                        const SizedBox(height: 16),
-                        Text('Sua lista está vazia', style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
-                      ],
+          return Column(
+            children: [
+              // HEADER INTELIGENTE
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: AppColors.primarySage,
+                  borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(Icons.auto_awesome, color: Colors.white70, size: 24),
+                    const SizedBox(height: 8),
+                    const Text('Gerada pela sua Dieta', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 4),
+                    Text(
+                      itensPendentes == 0 ? 'Tudo no carrinho! 🎉' : 'Faltam $itensPendentes itens para comprar', 
+                      style: const TextStyle(color: Colors.white70, fontSize: 14)
                     ),
-                  );
-                }
+                    const SizedBox(height: 16),
+                    LinearProgressIndicator(
+                      value: listaDoMercado.isNotEmpty ? (_itensNoCarrinho.length / listaDoMercado.length) : 0,
+                      backgroundColor: Colors.white24,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 6,
+                      borderRadius: BorderRadius.circular(10),
+                    )
+                  ],
+                ),
+              ),
 
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: snapshot.data!.docs.length,
+              // LISTA DO SUPERMERCADO
+              Expanded(
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(20),
+                  itemCount: listaDoMercado.length,
                   itemBuilder: (context, index) {
-                    final doc = snapshot.data!.docs[index];
-                    final dados = doc.data() as Map<String, dynamic>;
-                    final bool comprado = dados['comprado'] ?? false;
+                    final item = listaDoMercado[index];
+                    final noCarrinho = _itensNoCarrinho.contains(item);
 
-                    return Card(
-                      elevation: 0,
-                      margin: const EdgeInsets.only(bottom: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: BorderSide(color: Colors.grey.shade200)),
-                      child: ListTile(
-                        leading: Checkbox(
-                          value: comprado,
-                          activeColor: AppColors.primarySage,
-                          onChanged: (_) => _alternarStatus(doc.id, comprado),
-                        ),
+                    return AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: noCarrinho ? Colors.grey.shade100 : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: noCarrinho ? Colors.grey.shade200 : Colors.grey.shade300),
+                      ),
+                      child: CheckboxListTile(
+                        value: noCarrinho,
+                        onChanged: (bool? value) => _alternarCarrinho(item),
+                        activeColor: AppColors.primarySage,
+                        checkColor: Colors.white,
                         title: Text(
-                          dados['nome'] ?? '',
+                          item,
                           style: TextStyle(
-                            fontSize: 16,
-                            color: comprado ? Colors.grey : AppColors.textDark,
-                            decoration: comprado ? TextDecoration.lineThrough : null,
+                            fontSize: 14,
+                            fontWeight: noCarrinho ? FontWeight.normal : FontWeight.bold,
+                            color: noCarrinho ? Colors.grey.shade500 : AppColors.textDark,
+                            decoration: noCarrinho ? TextDecoration.lineThrough : TextDecoration.none,
                           ),
                         ),
-                        trailing: IconButton(
-                          icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
-                          onPressed: () => _deletarItem(doc.id),
+                        secondary: Icon(
+                          noCarrinho ? Icons.check_circle : Icons.circle_outlined,
+                          color: noCarrinho ? AppColors.primarySage : Colors.grey.shade400,
                         ),
                       ),
                     );
                   },
-                );
-              },
-            ),
-          ),
-        ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
