@@ -21,22 +21,69 @@ const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" hei
 const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 
 // ==========================================
-// 🍎 BANCO DE DADOS GLOBAL DE ALIMENTOS (Mockup de Produção)
+// 🍎 BANCO DE DADOS GLOBAL DE ALIMENTOS (Expandido e Robusto)
 // ==========================================
 const BANCO_ALIMENTOS = [
+  // Carboidratos & Raízes
   { id: 1, nome: "Arroz Branco (cozido)", kcal100g: 130 },
-  { id: 2, nome: "Feijão Carioca (cozido)", kcal100g: 76 },
-  { id: 3, nome: "Peito de Frango (grelhado)", kcal100g: 165 },
-  { id: 4, nome: "Batata Doce (cozida)", kcal100g: 86 },
-  { id: 5, nome: "Ovo Cozido", kcal100g: 155 },
-  { id: 6, nome: "Banana Prata", kcal100g: 98 },
-  { id: 7, nome: "Aveia em Flocos", kcal100g: 394 },
-  { id: 8, nome: "Patinho Moído (refogado)", kcal100g: 133 },
-  { id: 9, nome: "Brócolis (cozido)", kcal100g: 35 },
-  { id: 10, nome: "Whey Protein (Pó)", kcal100g: 380 },
+  { id: 2, nome: "Arroz Integral (cozido)", kcal100g: 112 },
+  { id: 3, nome: "Feijão Carioca (cozido)", kcal100g: 76 },
+  { id: 4, nome: "Feijão Preto (cozido)", kcal100g: 73 },
+  { id: 5, nome: "Batata Doce (cozida)", kcal100g: 86 },
+  { id: 6, nome: "Batata Inglesa (cozida)", kcal100g: 52 },
+  { id: 7, nome: "Mandioca / Aipim (cozido)", kcal100g: 125 },
+  { id: 8, nome: "Macarrão de Trigo (cozido)", kcal100g: 131 },
+  { id: 9, nome: "Aveia em Flocos", kcal100g: 394 },
+  { id: 10, nome: "Tapioca (goma hidratada)", kcal100g: 240 },
   { id: 11, nome: "Pão Francês", kcal100g: 300 },
-  { id: 12, nome: "Manteiga", kcal100g: 717 },
-  { id: 13, nome: "Leite Integral", kcal100g: 62 },
+  { id: 12, nome: "Pão de Forma Integral", kcal100g: 250 },
+  { id: 13, nome: "Cuscuz de Milho (cozido)", kcal100g: 112 },
+  
+  // Proteínas (Carnes, Ovos, Laticínios e Suplementos)
+  { id: 14, nome: "Peito de Frango (grelhado)", kcal100g: 165 },
+  { id: 15, nome: "Patinho Moído (refogado)", kcal100g: 133 },
+  { id: 16, nome: "Coxão Mole (grelhado)", kcal100g: 219 },
+  { id: 17, nome: "Filé de Tilápia / Salmão", kcal100g: 200 },
+  { id: 18, nome: "Atum em lata (água)", kcal100g: 116 },
+  { id: 19, nome: "Ovo de Galinha Cozido", kcal100g: 155 },
+  { id: 20, nome: "Ovo Mexido (com fio de óleo)", kcal100g: 190 },
+  { id: 21, nome: "Leite Integral (líquido)", kcal100g: 62 },
+  { id: 22, nome: "Leite Desnatado (líquido)", kcal100g: 35 },
+  { id: 23, nome: "Iogurte Natural Integral", kcal100g: 60 },
+  { id: 24, nome: "Iogurte Whey / Proteína", kcal100g: 70 },
+  { id: 25, nome: "Queijo Mussarela", kcal100g: 300 },
+  { id: 26, nome: "Queijo Minas Frescal", kcal100g: 240 },
+  { id: 27, nome: "Requeijão Tradicional", kcal100g: 260 },
+  { id: 28, nome: "Whey Protein Concentrado (Pó)", kcal100g: 400 },
+  { id: 29, nome: "Creatina", kcal100g: 0 },
+  
+  // Frutas
+  { id: 30, nome: "Banana Prata", kcal100g: 98 },
+  { id: 31, nome: "Banana Nanica", kcal100g: 92 },
+  { id: 32, nome: "Maçã (Fuji/Gala)", kcal100g: 52 },
+  { id: 33, nome: "Mamão Papaya", kcal100g: 43 },
+  { id: 34, nome: "Morango", kcal100g: 32 },
+  { id: 35, nome: "Uva", kcal100g: 69 },
+  { id: 36, nome: "Melancia", kcal100g: 30 },
+  { id: 37, nome: "Laranja", kcal100g: 47 },
+  { id: 38, nome: "Abacate", kcal100g: 160 },
+  
+  // Vegetais & Hortaliças
+  { id: 39, nome: "Alface", kcal100g: 15 },
+  { id: 40, nome: "Tomate", kcal100g: 18 },
+  { id: 41, nome: "Cenoura (cozida)", kcal100g: 41 },
+  { id: 42, nome: "Brócolis (cozido)", kcal100g: 35 },
+  { id: 43, nome: "Cebola", kcal100g: 40 },
+  { id: 44, nome: "Abobrinha (cozida)", kcal100g: 17 },
+  
+  // Gorduras Boas e Outros
+  { id: 45, nome: "Azeite de Oliva Extra Virgem", kcal100g: 884 },
+  { id: 46, nome: "Manteiga com Sal", kcal100g: 717 },
+  { id: 47, nome: "Pasta de Amendoim (Integral)", kcal100g: 588 },
+  { id: 48, nome: "Castanha de Caju", kcal100g: 553 },
+  { id: 49, nome: "Castanha do Pará", kcal100g: 580 },
+  { id: 50, nome: "Amêndoas", kcal100g: 579 },
+  { id: 51, nome: "Chocolate Amargo (70%)", kcal100g: 540 }
 ];
 
 // ==========================================
@@ -144,7 +191,6 @@ export default function App() {
     }
   }, [abaAtiva, pacienteChatSelecionado]);
 
-  // 🚀 FUNÇÕES CRUD E AÇÕES DA NUTRI
   const trocarAba = (aba) => {
     setAbaAtiva(aba);
     setMenuMobileAberto(false);
@@ -234,7 +280,14 @@ export default function App() {
   };
 
   // 🍎 FUNÇÕES DA CALCULADORA DE ALIMENTOS
-  const alimentosFiltrados = BANCO_ALIMENTOS.filter(a => a.nome.toLowerCase().includes(buscaAlimento.toLowerCase()));
+  // Remove acentos e joga para minúsculo para a busca ficar à prova de falhas
+  const removerAcentos = (str) => {
+    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  };
+
+  const alimentosFiltrados = BANCO_ALIMENTOS.filter(a => 
+    removerAcentos(a.nome).includes(removerAcentos(buscaAlimento))
+  );
   
   const calcularKcalAtual = () => {
     if(!alimentoSelecionadoCalc) return 0;
@@ -246,17 +299,12 @@ export default function App() {
     const calorias = calcularKcalAtual();
     const novaLinha = `• ${quantidadeCalc}g de ${alimentoSelecionadoCalc.nome} (${calorias} kcal)\n`;
     setTurnoState(valorAtual + (valorAtual ? "\n" : "") + novaLinha);
-    // Reseta a busca após injetar
     setBuscaAlimento("");
     setAlimentoSelecionadoCalc(null);
   };
 
-  // 🖨️ FUNÇÃO DE EXPORTAR PDF
-  const imprimirProntuario = () => {
-    window.print();
-  };
+  const imprimirProntuario = () => window.print();
 
-  // 📊 GRÁFICO SVG
   const construirCaminhoSVG = () => {
     if (historicoPesoReal.length < 2) return "";
     const larguraTotal = 1000; const alturaTotal = 100;
@@ -272,10 +320,6 @@ export default function App() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#F9F6F0] font-sans text-gray-800 relative">
-      
-      {/* =========================================
-          ESTILOS DE IMPRESSÃO (CSS Embutido para o PDF)
-      ========================================= */}
       <style>{`
         @media print {
           aside, .no-print, header button, .md\\:hidden { display: none !important; }
@@ -289,22 +333,14 @@ export default function App() {
         .print-header { display: none; }
       `}</style>
 
-      {/* 🛡️ OVERLAY MOBILE */}
-      {menuMobileAberto && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setMenuMobileAberto(false)} />
-      )}
+      {menuMobileAberto && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setMenuMobileAberto(false)} />}
 
-      {/* 🧭 SIDEBAR PREMIUM */}
       <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#3B4D43] text-white flex flex-col justify-between p-6 transform transition-transform duration-300 ease-in-out md:relative md:translate-x-0 shadow-2xl md:shadow-none ${menuMobileAberto ? 'translate-x-0' : '-translate-x-full'}`}>
         <div>
           <div className="flex items-center justify-between md:justify-start gap-3 mb-10">
-            <div className="flex items-center gap-3 text-emerald-400">
-              <IconLeaf />
-              <h1 className="text-xl font-bold tracking-wide text-white">Nutri Pro</h1>
-            </div>
+            <div className="flex items-center gap-3 text-emerald-400"><IconLeaf /><h1 className="text-xl font-bold tracking-wide text-white">Nutri Pro</h1></div>
             <button className="md:hidden text-white/70 hover:text-white" onClick={() => setMenuMobileAberto(false)}><IconX /></button>
           </div>
-          
           <nav className="space-y-3">
             {[
               { id: 'dashboard', label: 'Visão Geral', icon: <IconLayout /> },
@@ -313,150 +349,57 @@ export default function App() {
               { id: 'feed', label: 'Gestão do Feed', icon: <IconMegaphone /> },
               { id: 'chat', label: 'Consultório', icon: <IconMessage /> },
             ].map(item => (
-              <button 
-                key={item.id}
-                onClick={() => trocarAba(item.id)} 
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}
-              >
-                {item.icon}
-                <span className="text-sm">{item.label}</span>
+              <button key={item.id} onClick={() => trocarAba(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+                {item.icon}<span className="text-sm">{item.label}</span>
               </button>
             ))}
           </nav>
         </div>
-        <div className="border-t border-white/10 pt-6 text-xs text-white/40 flex justify-between items-center">
-          <span>v5.0 Global</span><span>Admin</span>
-        </div>
+        <div className="border-t border-white/10 pt-6 text-xs text-white/40 flex justify-between items-center"><span>v5.1 Global</span><span>Admin</span></div>
       </aside>
 
-      {/* 🖥️ CONTAINER CENTRAL */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden w-full relative">
-        
-        {/* 📱 HEADER MOBILE */}
         <div className="md:hidden flex items-center justify-between bg-white border-b border-gray-200 px-6 py-4 z-30">
           <div className="flex items-center gap-2 text-[#3B4D43]"><IconLeaf /><span className="font-bold">Nutri Pro</span></div>
           <button onClick={() => setMenuMobileAberto(true)} className="text-gray-600 focus:outline-none p-1"><IconMenu /></button>
         </div>
 
-        {/* 📜 MAIN SCROLL */}
         <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
-          
-          {/* CABEÇALHO PARA IMPRESSÃO (Oculto na tela normal, visível no PDF) */}
-          <div className="print-header">
-            <h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>Clínica Nutri Life Pro</h1>
-            <p style={{ color: '#666', fontSize: '12px' }}>Plano Alimentar e Acompanhamento Clínico</p>
-          </div>
+          <div className="print-header"><h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>Clínica Nutri Life Pro</h1><p style={{ color: '#666', fontSize: '12px' }}>Plano Alimentar e Acompanhamento Clínico</p></div>
 
-          {/* =========================================
-              ABA 0: DASHBOARD
-          ========================================= */}
           {abaAtiva === 'dashboard' && (
             <div className="animate-fade-in max-w-6xl mx-auto no-print">
-              <header className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Inteligência Clínica</h2>
-                <p className="text-gray-500 text-sm mt-1">Sua central de monitoramento em tempo real.</p>
-              </header>
-
+              <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Inteligência Clínica</h2><p className="text-gray-500 text-sm mt-1">Sua central de monitoramento em tempo real.</p></header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start flex-col gap-4">
-                  <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl"><IconUsers /></div>
-                  <div><p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Pacientes Ativos</p><p className="text-3xl font-bold text-gray-900">{pacientes.length}</p></div>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start flex-col gap-4">
-                  <div className="bg-blue-50 text-blue-600 p-3 rounded-xl"><IconFileText /></div>
-                  <div><p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Dietas no Banco</p><p className="text-3xl font-bold text-gray-900">{modelosDieta.length}</p></div>
-                </div>
-                <div className="bg-gradient-to-br from-[#3B4D43] to-[#2C3E35] p-6 rounded-2xl shadow-sm flex items-start flex-col gap-4 text-white">
-                  <div className="bg-white/20 p-3 rounded-xl"><IconTrophy /></div>
-                  <div><p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mb-1">Impacto Global Estimado</p><p className="text-2xl font-bold text-white mt-1">+ {pacientes.length * 2.5} kg eliminados</p></div>
-                </div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start flex-col gap-4"><div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl"><IconUsers /></div><div><p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Pacientes Ativos</p><p className="text-3xl font-bold text-gray-900">{pacientes.length}</p></div></div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start flex-col gap-4"><div className="bg-blue-50 text-blue-600 p-3 rounded-xl"><IconFileText /></div><div><p className="text-gray-400 text-[11px] font-bold uppercase tracking-wider mb-1">Dietas no Banco</p><p className="text-3xl font-bold text-gray-900">{modelosDieta.length}</p></div></div>
+                <div className="bg-gradient-to-br from-[#3B4D43] to-[#2C3E35] p-6 rounded-2xl shadow-sm flex items-start flex-col gap-4 text-white"><div className="bg-white/20 p-3 rounded-xl"><IconTrophy /></div><div><p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mb-1">Impacto Global Estimado</p><p className="text-2xl font-bold text-white mt-1">+ {pacientes.length * 2.5} kg eliminados</p></div></div>
               </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div>
-                  <ul className="space-y-3">
-                    {pacientes.slice(0, 3).map((p, i) => (
-                      <li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl">
-                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento</p></div>
-                        <button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button>
-                      </li>
-                    ))}
-                    {pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}
-                  </ul>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div>
-                  <ul className="space-y-3">
-                    {pacientes.slice(0, 2).map((p, i) => (
-                      <li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas perfeitamente</p></div>
-                        <span className="text-xl">🔥</span>
-                      </li>
-                    ))}
-                    {pacientes.length === 0 && <p className="text-sm text-gray-400">Dados insuficientes.</p>}
-                  </ul>
-                </div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div><ul className="space-y-3">{pacientes.slice(0, 3).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento</p></div><button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta.</p>}</ul></div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div><ul className="space-y-3">{pacientes.slice(0, 2).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas</p></div><span className="text-xl">🔥</span></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Dados insuficientes.</p>}</ul></div>
               </div>
             </div>
           )}
 
-          {/* =========================================
-              ABA: TEMPLATES (BANCO DE DIETAS)
-          ========================================= */}
           {abaAtiva === 'templates' && (
             <div className="animate-fade-in max-w-6xl mx-auto no-print">
-              <header className="mb-8">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Banco de Dietas</h2>
-                <p className="text-gray-500 text-sm mt-1">Crie templates prontos para acelerar sua prescrição clínica.</p>
-              </header>
+              <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Banco de Dietas</h2><p className="text-gray-500 text-sm mt-1">Crie templates prontos para acelerar sua prescrição clínica.</p></header>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit">
-                  <h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Criar Novo Template</h3>
-                  <form onSubmit={salvarNovoModelo}>
-                    <div className="mb-6"><label className="block text-xs font-bold text-gray-500 mb-2">Nome do Modelo</label><input type="text" value={novoModeloNome} onChange={(e)=>setNovoModeloNome(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" required /></div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                      <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                      <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                      <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                      <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                    </div>
-                    <div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] shadow-sm">💾 Salvar no Banco</button></div>
-                  </form>
-                </div>
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit">
-                  <h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Modelos Salvos</h3>
-                  <div className="space-y-3">
-                    {modelosDieta.length === 0 ? <p className="text-sm text-gray-400 italic">Nenhum modelo salvo.</p> :
-                      modelosDieta.map(m => (
-                        <div key={m.id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 group flex justify-between items-center">
-                          <p className="font-bold text-gray-800 text-sm truncate pr-2">{m.nome}</p>
-                          <button onClick={() => excluirModelo(m.id)} className="text-red-400 hover:text-red-600 transition"><IconTrash /></button>
-                        </div>
-                      ))
-                    }
-                  </div>
-                </div>
+                <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit"><h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Criar Novo Template</h3><form onSubmit={salvarNovoModelo}><div className="mb-6"><label className="block text-xs font-bold text-gray-500 mb-2">Nome do Modelo</label><input type="text" value={novoModeloNome} onChange={(e)=>setNovoModeloNome(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" required /></div><div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6"><div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div><div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div><div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div><div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div></div><div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] shadow-sm">💾 Salvar no Banco</button></div></form></div>
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit"><h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Modelos Salvos</h3><div className="space-y-3">{modelosDieta.length === 0 ? <p className="text-sm text-gray-400 italic">Nenhum modelo salvo.</p> : modelosDieta.map(m => (<div key={m.id} className="p-4 border border-gray-100 rounded-xl bg-gray-50 group flex justify-between items-center"><p className="font-bold text-gray-800 text-sm truncate pr-2">{m.nome}</p><button onClick={() => excluirModelo(m.id)} className="text-red-400 hover:text-red-600 transition"><IconTrash /></button></div>))}</div></div>
               </div>
             </div>
           )}
 
-          {/* =========================================
-              ABA: PACIENTES - LISTA GERAL
-          ========================================= */}
           {abaAtiva === 'pacientes' && !pacienteSelecionado && (
             <div className="animate-fade-in max-w-6xl mx-auto no-print">
-              <header className="mb-8 flex flex-col md:flex-row justify-between md:items-end gap-4">
-                <div><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Pacientes</h2><p className="text-gray-500 text-sm mt-1">Gerencie a evolução clínica individualmente.</p></div>
-              </header>
+              <header className="mb-8 flex flex-col md:flex-row justify-between md:items-end gap-4"><div><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Pacientes</h2><p className="text-gray-500 text-sm mt-1">Gerencie a evolução clínica individualmente.</p></div></header>
               {carregando ? <div className="text-center py-12 text-gray-400 text-sm">Carregando...</div> : pacientes.length === 0 ? <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 border-dashed">Nenhum paciente.</div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pacientes.map((p) => (
                     <div key={p.id} onClick={() => {setPacienteSelecionado(p); setSubAbaPaciente('resumo');}} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between h-44">
-                      <div>
-                        <div className="flex justify-between items-start mb-1"><h3 className="font-bold text-gray-900 truncate pr-2">{p.nome || "Sem Nome"}</h3><span className="bg-gray-50 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-lg uppercase whitespace-nowrap">{p.objetivo || 'Não def.'}</span></div>
-                        <p className="text-xs text-gray-400 truncate">{p.email}</p>
-                      </div>
+                      <div><div className="flex justify-between items-start mb-1"><h3 className="font-bold text-gray-900 truncate pr-2">{p.nome || "Sem Nome"}</h3><span className="bg-gray-50 text-gray-500 text-[10px] font-bold px-2 py-1 rounded-lg uppercase whitespace-nowrap">{p.objetivo || 'Não def.'}</span></div><p className="text-xs text-gray-400 truncate">{p.email}</p></div>
                       <div className="flex items-center justify-between pt-4 border-t border-gray-50 mt-auto"><span className="text-[10px] text-gray-400 font-mono">ID: {p.id.substring(0,6)}...</span><span className="text-[#3B4D43] text-xs font-bold">Abrir →</span></div>
                     </div>
                   ))}
@@ -465,21 +408,11 @@ export default function App() {
             </div>
           )}
 
-          {/* =========================================
-              ABA: PACIENTES - PRONTUÁRIO
-          ========================================= */}
           {abaAtiva === 'pacientes' && pacienteSelecionado && (
             <div className="animate-fade-in max-w-6xl mx-auto">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 print-header">
-                <div>
-                  <button onClick={() => setPacienteSelecionado(null)} className="text-xs font-bold text-gray-400 hover:text-[#3B4D43] mb-2 transition no-print">← Voltar</button>
-                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{pacienteSelecionado.nome}</h2>
-                  <p className="text-xs text-gray-500 mt-1">Prontuário Médico • ID: {pacienteSelecionado.id.substring(0,8)}</p>
-                </div>
-                <div className="flex gap-2 no-print">
-                  <button onClick={imprimirProntuario} className="bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconPrinter /> Exportar PDF</button>
-                  <button onClick={() => excluirPaciente(pacienteSelecionado.id)} className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconTrash /> Excluir</button>
-                </div>
+                <div><button onClick={() => setPacienteSelecionado(null)} className="text-xs font-bold text-gray-400 hover:text-[#3B4D43] mb-2 transition no-print">← Voltar</button><h2 className="text-2xl md:text-3xl font-bold text-gray-900">{pacienteSelecionado.nome}</h2><p className="text-xs text-gray-500 mt-1">Prontuário Médico • ID: {pacienteSelecionado.id.substring(0,8)}</p></div>
+                <div className="flex gap-2 no-print"><button onClick={imprimirProntuario} className="bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconPrinter /> Exportar PDF</button><button onClick={() => excluirPaciente(pacienteSelecionado.id)} className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconTrash /> Excluir</button></div>
               </div>
 
               <div className="flex overflow-x-auto gap-3 mb-8 pb-2 hide-scrollbar no-print">
@@ -490,139 +423,48 @@ export default function App() {
 
               {subAbaPaciente === 'resumo' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Ficha Cadastral</h3>
-                    <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                      <div className="bg-gray-50 p-4 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block mb-1">IDADE / GÊNERO</span><span className="font-bold text-gray-800">{pacienteSelecionado.idade || '-'}a • {pacienteSelecionado.genero || '-'}</span></div>
-                      <div className="bg-gray-50 p-4 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block mb-1">ALTURA / PESO INICIAL</span><span className="font-bold text-gray-800">{pacienteSelecionado.altura || '-'}m • {pacienteSelecionado.peso_inicial || '-'}kg</span></div>
-                    </div>
-                    <div className="border border-gray-100 p-4 rounded-xl mb-4"><span className="text-[10px] text-gray-400 font-bold block mb-1">OBJETIVO & ATIVIDADE</span><span className="font-bold text-gray-800">{pacienteSelecionado.objetivo || '-'} • {pacienteSelecionado.nivel_atividade || '-'}</span></div>
-                    <div className="bg-red-50 p-4 rounded-xl border border-red-100"><span className="text-[10px] text-red-500 font-bold block mb-1">RESTRIÇÕES</span><span className="font-bold text-red-800">{pacienteSelecionado.restricao_alimentar || 'Nenhuma declarada'}</span></div>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
-                    <h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Evolução de Peso</h3>
-                    <div className="relative w-full flex-1 min-h-[180px] bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col justify-end">
-                      {historicoPesoReal.length < 2 ? <p className="text-xs text-gray-400 m-auto text-center px-8">Aguardando registros...</p> : (
-                        <><svg className="absolute inset-0 w-full h-full p-4" viewBox="0 0 1000 100" preserveAspectRatio="none"><path d={construirCaminhoSVG()} fill="none" stroke="#3B4D43" strokeWidth="4" strokeLinecap="round"/></svg>
-                          <div className="flex justify-between text-[10px] text-gray-400 font-bold z-10 w-full mt-auto">
-                            {historicoPesoReal.map((h, i) => <div key={i} className="text-center bg-white/80 px-2 py-1 rounded-md shadow-sm"><p className="text-gray-800">{h.peso}kg</p><p className="font-medium text-gray-400 mt-0.5">{h.data ? h.data.split('-').slice(1).reverse().join('/') : ''}</p></div>)}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Ficha Cadastral</h3><div className="grid grid-cols-2 gap-4 text-sm mb-4"><div className="bg-gray-50 p-4 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block mb-1">IDADE / GÊNERO</span><span className="font-bold text-gray-800">{pacienteSelecionado.idade || '-'}a • {pacienteSelecionado.genero || '-'}</span></div><div className="bg-gray-50 p-4 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block mb-1">ALTURA / PESO INICIAL</span><span className="font-bold text-gray-800">{pacienteSelecionado.altura || '-'}m • {pacienteSelecionado.peso_inicial || '-'}kg</span></div></div><div className="border border-gray-100 p-4 rounded-xl mb-4"><span className="text-[10px] text-gray-400 font-bold block mb-1">OBJETIVO & ATIVIDADE</span><span className="font-bold text-gray-800">{pacienteSelecionado.objetivo || '-'} • {pacienteSelecionado.nivel_atividade || '-'}</span></div><div className="bg-red-50 p-4 rounded-xl border border-red-100"><span className="text-[10px] text-red-500 font-bold block mb-1">RESTRIÇÕES</span><span className="font-bold text-red-800">{pacienteSelecionado.restricao_alimentar || 'Nenhuma declarada'}</span></div></div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col"><h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Evolução de Peso</h3><div className="relative w-full flex-1 min-h-[180px] bg-gray-50 rounded-xl p-4 border border-gray-100 flex flex-col justify-end">{historicoPesoReal.length < 2 ? <p className="text-xs text-gray-400 m-auto text-center px-8">Aguardando registros...</p> : (<><svg className="absolute inset-0 w-full h-full p-4" viewBox="0 0 1000 100" preserveAspectRatio="none"><path d={construirCaminhoSVG()} fill="none" stroke="#3B4D43" strokeWidth="4" strokeLinecap="round"/></svg><div className="flex justify-between text-[10px] text-gray-400 font-bold z-10 w-full mt-auto">{historicoPesoReal.map((h, i) => <div key={i} className="text-center bg-white/80 px-2 py-1 rounded-md shadow-sm"><p className="text-gray-800">{h.peso}kg</p><p className="font-medium text-gray-400 mt-0.5">{h.data ? h.data.split('-').slice(1).reverse().join('/') : ''}</p></div>)}</div></>)}</div></div>
                 </div>
               )}
 
               {subAbaPaciente === 'diario' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Diário (Hoje)</h3>
-                    <div className="flex gap-4 mb-6">
-                      <div className="flex-1 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center"><p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Calorias Ingeridas</p><p className="text-2xl font-bold text-emerald-900">{dadosDiario?.calorias_consumidas || 0}</p></div>
-                      <div className="flex-1 bg-blue-50 border border-blue-100 p-4 rounded-xl text-center"><p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Água (ml)</p><p className="text-2xl font-bold text-blue-900">{dadosDiario?.agua_consumida || 0}</p></div>
-                    </div>
-                    <ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">
-                      {(!dadosDiario?.historico_alimentos || dadosDiario.historico_alimentos.length === 0) ? <p className="text-sm text-gray-400 text-center">Nenhum registro hoje.</p> : 
-                        dadosDiario.historico_alimentos.map((item, idx) => (
-                          <li key={idx} className="flex justify-between items-center p-3 bg-white border border-gray-100 shadow-sm rounded-xl text-sm">
-                            <div><p className="font-bold text-gray-800 text-xs mb-0.5">{item.nome}</p><p className="text-[10px] text-gray-400 uppercase font-medium">{item.turno} • {item.quantidade}x {item.medida_escolhida}</p></div>
-                            <span className="font-bold text-emerald-600 text-xs bg-emerald-50 px-2 py-1 rounded-md">{item.calorias} kcal</span>
-                          </li>
-                        ))
-                      }
-                    </ul>
-                  </div>
-                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Galeria</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="aspect-[3/4] bg-gray-50 border border-gray-100 rounded-xl bg-cover bg-center overflow-hidden" style={{backgroundImage: `url(${fotosPaciente.antes_1 || ''})`}}>{!fotosPaciente.antes_1 && <span className="flex items-center justify-center h-full text-gray-300 text-xs">Sem Imagem</span>}</div>
-                      <div className="aspect-[3/4] bg-gray-50 border border-gray-100 rounded-xl bg-cover bg-center overflow-hidden" style={{backgroundImage: `url(${fotosPaciente.depois_1 || ''})`}}>{!fotosPaciente.depois_1 && <span className="flex items-center justify-center h-full text-gray-300 text-xs">Sem Imagem</span>}</div>
-                    </div>
-                  </div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Diário (Hoje)</h3><div className="flex gap-4 mb-6"><div className="flex-1 bg-emerald-50 border border-emerald-100 p-4 rounded-xl text-center"><p className="text-[10px] font-bold text-emerald-600 uppercase mb-1">Calorias Ingeridas</p><p className="text-2xl font-bold text-emerald-900">{dadosDiario?.calorias_consumidas || 0}</p></div><div className="flex-1 bg-blue-50 border border-blue-100 p-4 rounded-xl text-center"><p className="text-[10px] font-bold text-blue-600 uppercase mb-1">Água (ml)</p><p className="text-2xl font-bold text-blue-900">{dadosDiario?.agua_consumida || 0}</p></div></div><ul className="space-y-2 max-h-[300px] overflow-y-auto pr-2">{(!dadosDiario?.historico_alimentos || dadosDiario.historico_alimentos.length === 0) ? <p className="text-sm text-gray-400 text-center">Nenhum registro hoje.</p> : dadosDiario.historico_alimentos.map((item, idx) => (<li key={idx} className="flex justify-between items-center p-3 bg-white border border-gray-100 shadow-sm rounded-xl text-sm"><div><p className="font-bold text-gray-800 text-xs mb-0.5">{item.nome}</p><p className="text-[10px] text-gray-400 uppercase font-medium">{item.turno} • {item.quantidade}x {item.medida_escolhida}</p></div><span className="font-bold text-emerald-600 text-xs bg-emerald-50 px-2 py-1 rounded-md">{item.calorias} kcal</span></li>))}</ul></div>
+                  <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><h3 className="font-bold text-gray-900 mb-5 text-sm uppercase tracking-wider">Galeria</h3><div className="grid grid-cols-2 gap-4"><div className="aspect-[3/4] bg-gray-50 border border-gray-100 rounded-xl bg-cover bg-center overflow-hidden" style={{backgroundImage: `url(${fotosPaciente.antes_1 || ''})`}}>{!fotosPaciente.antes_1 && <span className="flex items-center justify-center h-full text-gray-300 text-xs">Sem Imagem</span>}</div><div className="aspect-[3/4] bg-gray-50 border border-gray-100 rounded-xl bg-cover bg-center overflow-hidden" style={{backgroundImage: `url(${fotosPaciente.depois_1 || ''})`}}>{!fotosPaciente.depois_1 && <span className="flex items-center justify-center h-full text-gray-300 text-xs">Sem Imagem</span>}</div></div></div>
                 </div>
               )}
 
-              {/* 🚀 SUB-ABA METAS REFORMULADA: CALCULADORA GLOBAL DE ALIMENTOS */}
               {subAbaPaciente === 'metas' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                  
-                  {/* ESQUERDA: EDITOR DO PLANO E METAS */}
                   <form onSubmit={salvarPlanoEMetas} className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex justify-between items-center mb-6 no-print">
-                      <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Prescrição Clínica</h3>
-                      <select onChange={(e) => aplicarModelo(e.target.value)} className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-600 rounded-lg px-3 py-1.5 outline-none">
-                        <option value="">+ Importar Modelo Rápido...</option>
-                        {modelosDieta.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                      </select>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                      <div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Calórica (kcal)</label><input type="number" value={novaMetaCalorias} onChange={(e)=>setNovaMetaCalorias(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-[#3B4D43] focus:outline-[#3B4D43]" /></div>
-                      <div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Hídrica (ml)</label><input type="number" value={novaMetaAgua} onChange={(e)=>setNovaMetaAgua(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-blue-600 focus:outline-[#3B4D43]" /></div>
-                    </div>
-                    
+                    <div className="flex justify-between items-center mb-6 no-print"><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Prescrição Clínica</h3><select onChange={(e) => aplicarModelo(e.target.value)} className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-600 rounded-lg px-3 py-1.5 outline-none"><option value="">+ Importar Modelo Rápido...</option>{modelosDieta.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}</select></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8"><div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Calórica (kcal)</label><input type="number" value={novaMetaCalorias} onChange={(e)=>setNovaMetaCalorias(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-[#3B4D43] focus:outline-[#3B4D43]" /></div><div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Hídrica (ml)</label><input type="number" value={novaMetaAgua} onChange={(e)=>setNovaMetaAgua(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-blue-600 focus:outline-[#3B4D43]" /></div></div>
                     <div className="space-y-4">
                       <div><label className="block text-[11px] font-bold text-gray-500 mb-1">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
                       <div><label className="block text-[11px] font-bold text-gray-500 mb-1">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
                       <div><label className="block text-[11px] font-bold text-gray-500 mb-1">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
                       <div><label className="block text-[11px] font-bold text-gray-500 mb-1">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
                     </div>
-                    
-                    <div className="flex justify-end pt-6 mt-4 border-t border-gray-100 no-print">
-                      <button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition shadow-sm">Sincronizar Prescrição no App</button>
-                    </div>
+                    <div className="flex justify-end pt-6 mt-4 border-t border-gray-100 no-print"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition shadow-sm">Sincronizar Prescrição no App</button></div>
                   </form>
-
-                  {/* DIREITA: CALCULADORA GLOBAL (ASSISTENTE) */}
                   <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit no-print sticky top-4">
                     <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><IconSearch /> Assistente de Prescrição</h3>
                     <p className="text-xs text-gray-500 mb-4 leading-relaxed">Busque um alimento no banco de dados, calcule a porção e injete diretamente no plano ao lado.</p>
-                    
-                    <input 
-                      type="text" 
-                      placeholder="Buscar alimento (Ex: Frango)..." 
-                      value={buscaAlimento} 
-                      onChange={(e) => setBuscaAlimento(e.target.value)} 
-                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-emerald-500 mb-2"
-                    />
-
-                    {/* Resultados da Busca */}
+                    <input type="text" placeholder="Buscar alimento (Ex: Frango)..." value={buscaAlimento} onChange={(e) => setBuscaAlimento(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-emerald-500 mb-2" />
                     {buscaAlimento && !alimentoSelecionadoCalc && (
                       <div className="bg-white border border-gray-100 rounded-xl shadow-lg max-h-48 overflow-y-auto absolute w-[calc(100%-3rem)] z-10">
-                        {alimentosFiltrados.length === 0 ? <p className="text-xs text-gray-400 p-3">Nenhum resultado encontrado.</p> : 
-                          alimentosFiltrados.map(a => (
-                            <button key={a.id} type="button" onClick={() => setAlimentoSelecionadoCalc(a)} className="w-full text-left p-3 hover:bg-emerald-50 border-b border-gray-50 last:border-0 transition">
-                              <p className="text-xs font-bold text-gray-800">{a.nome}</p>
-                              <p className="text-[10px] text-gray-400">{a.kcal100g} kcal / 100g</p>
-                            </button>
-                          ))
-                        }
+                        {alimentosFiltrados.length === 0 ? <p className="text-xs text-gray-400 p-3">Nenhum resultado.</p> : alimentosFiltrados.map(a => (<button key={a.id} type="button" onClick={() => setAlimentoSelecionadoCalc(a)} className="w-full text-left p-3 hover:bg-emerald-50 border-b border-gray-50 last:border-0 transition"><p className="text-xs font-bold text-gray-800">{a.nome}</p><p className="text-[10px] text-gray-400">{a.kcal100g} kcal / 100g</p></button>))}
                       </div>
                     )}
-
-                    {/* Painel da Porção (Após Selecionar) */}
                     {alimentoSelecionadoCalc && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4 relative">
                         <button type="button" onClick={() => {setAlimentoSelecionadoCalc(null); setBuscaAlimento("");}} className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"><IconX /></button>
                         <p className="text-xs font-bold text-emerald-900 mb-3 pr-6">{alimentoSelecionadoCalc.nome}</p>
-                        
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Quantidade (g)</label>
-                            <input type="number" value={quantidadeCalc} onChange={(e) => setQuantidadeCalc(e.target.value)} className="w-full bg-white border border-emerald-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:outline-emerald-500" />
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Calorias</label>
-                            <div className="w-full bg-emerald-100 rounded-lg p-2 text-sm font-bold text-emerald-800 text-center">{calcularKcalAtual()} kcal</div>
-                          </div>
-                        </div>
-
+                        <div className="flex items-center gap-3 mb-4"><div className="flex-1"><label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Quantidade (g)</label><input type="number" value={quantidadeCalc} onChange={(e) => setQuantidadeCalc(e.target.value)} className="w-full bg-white border border-emerald-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:outline-emerald-500" /></div><div className="flex-1"><label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Calorias</label><div className="w-full bg-emerald-100 rounded-lg p-2 text-sm font-bold text-emerald-800 text-center">{calcularKcalAtual()} kcal</div></div></div>
                         <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 text-center">Injetar refeição no:</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Café', setPlanoCafe, planoCafe)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Café</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Almoço', setPlanoAlmoco, planoAlmoco)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Almoço</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Lanche', setPlanoLanche, planoLanche)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Lanche</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Jantar', setPlanoJantar, planoJantar)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Jantar</button>
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Café', setPlanoCafe, planoCafe)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Café</button><button type="button" onClick={() => injetarAlimentoNoTurno('Almoço', setPlanoAlmoco, planoAlmoco)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Almoço</button><button type="button" onClick={() => injetarAlimentoNoTurno('Lanche', setPlanoLanche, planoLanche)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Lanche</button><button type="button" onClick={() => injetarAlimentoNoTurno('Jantar', setPlanoJantar, planoJantar)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Jantar</button>
                         </div>
                       </div>
                     )}
@@ -632,69 +474,39 @@ export default function App() {
 
               {subAbaPaciente === 'notas' && (
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
-                  <div className="bg-amber-50 p-6 md:p-8 rounded-2xl border border-amber-100 shadow-sm">
-                    <h3 className="font-bold text-amber-900 mb-2 text-sm uppercase tracking-wider">Anotações Privadas</h3>
-                    <textarea value={notasInternas} onChange={(e) => setNotasInternas(e.target.value)} placeholder="Anotações internas..." className="w-full h-48 bg-white border border-amber-200/60 rounded-xl p-4 text-sm focus:outline-amber-500 resize-none mb-6 shadow-sm" />
-                    <button onClick={salvarNotasEAgenda} className="w-full md:w-auto bg-amber-600 text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-amber-700 transition">Salvar Dados</button>
-                  </div>
-                  <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex items-center gap-2 mb-6 text-indigo-600"><IconCalendar /><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Agendar Consulta</h3></div>
-                    <div className="space-y-4 mb-6">
-                      <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Data e Hora (Ex: 15/10 às 14h)</label><input type="text" value={dataConsulta} onChange={(e)=>setDataConsulta(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div>
-                      <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Link da Chamada (Meet/Zoom)</label><input type="text" value={linkConsulta} onChange={(e)=>setLinkConsulta(e.target.value)} placeholder="https://meet.google.com/..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div>
-                    </div>
-                    <button onClick={salvarNotasEAgenda} className="w-full md:w-auto bg-indigo-600 text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition">Agendar</button>
-                  </div>
+                  <div className="bg-amber-50 p-6 md:p-8 rounded-2xl border border-amber-100 shadow-sm"><h3 className="font-bold text-amber-900 mb-2 text-sm uppercase tracking-wider">Anotações Privadas</h3><textarea value={notasInternas} onChange={(e) => setNotasInternas(e.target.value)} placeholder="Anotações internas..." className="w-full h-48 bg-white border border-amber-200/60 rounded-xl p-4 text-sm focus:outline-amber-500 resize-none mb-6 shadow-sm" /><button onClick={salvarNotasEAgenda} className="w-full md:w-auto bg-amber-600 text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-amber-700 transition">Salvar Dados</button></div>
+                  <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6 text-indigo-600"><IconCalendar /><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Agendar Consulta</h3></div><div className="space-y-4 mb-6"><div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Data e Hora (Ex: 15/10 às 14h)</label><input type="text" value={dataConsulta} onChange={(e)=>setDataConsulta(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div><div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Link da Chamada (Meet/Zoom)</label><input type="text" value={linkConsulta} onChange={(e)=>setLinkConsulta(e.target.value)} placeholder="https://meet.google.com/..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div></div><button onClick={salvarNotasEAgenda} className="w-full md:w-auto bg-indigo-600 text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-indigo-700 transition">Agendar</button></div>
                 </div>
               )}
             </div>
           )}
 
           {/* =========================================
-              ABA: FEED (Mantido Intacto e Funcional)
+              ABA: FEED E CHAT (Mantidos Intactos)
           ========================================= */}
           {abaAtiva === 'feed' && (
             <div className="animate-fade-in max-w-4xl mx-auto no-print">
               <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Mural Educacional</h2></header>
-              <form onSubmit={publicarNoFeed} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8">
-                <textarea value={novoPostTexto} onChange={(e) => setNovoPostTexto(e.target.value)} placeholder="Compartilhe com seus pacientes..." className="w-full h-32 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-[#3B4D43] resize-none mb-4 transition" />
-                <div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition">Publicar</button></div>
-              </form>
+              <form onSubmit={publicarNoFeed} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8"><textarea value={novoPostTexto} onChange={(e) => setNovoPostTexto(e.target.value)} placeholder="Compartilhe com seus pacientes..." className="w-full h-32 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-[#3B4D43] resize-none mb-4 transition" /><div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition">Publicar</button></div></form>
               <div className="space-y-4">
-                {postsFeed.map(post => (
-                  <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start">
-                    <div className="flex-1"><span className="text-[10px] text-gray-500 font-bold uppercase mb-2 block">{post.autor}</span><p className="text-sm text-gray-700">{post.texto}</p></div>
-                    <button onClick={() => excluirPost(post.id)} className="sm:opacity-0 group-hover:opacity-100 text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"><IconTrash /></button>
-                  </div>
-                ))}
+                {postsFeed.map(post => (<div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start"><div className="flex-1"><span className="text-[10px] text-gray-500 font-bold uppercase mb-2 block">{post.autor}</span><p className="text-sm text-gray-700">{post.texto}</p></div><button onClick={() => excluirPost(post.id)} className="sm:opacity-0 group-hover:opacity-100 text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"><IconTrash /></button></div>))}
               </div>
             </div>
           )}
 
-          {/* =========================================
-              ABA: CHAT (Mantido Intacto e Funcional)
-          ========================================= */}
           {abaAtiva === 'chat' && (
             <div className="h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 md:gap-6 animate-fade-in max-w-6xl mx-auto no-print">
               <div className={`w-full md:w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col shrink-0 ${pacienteChatSelecionado ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-gray-100 bg-gray-50"><h3 className="font-bold text-sm text-gray-900 uppercase">Canais Privados</h3></div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                  {pacientes.map(p => (
-                    <button key={p.id} onClick={() => setPacienteChatSelecionado(p)} className={`w-full text-left p-3 rounded-xl transition-all duration-200 flex flex-col border ${pacienteChatSelecionado?.id === p.id ? 'bg-[#3B4D43] border-[#3B4D43] text-white' : 'bg-white border-transparent hover:bg-gray-50 text-gray-700'}`}>
-                      <span className="font-bold text-sm truncate">{p.nome || "Sem Nome"}</span>
-                    </button>
-                  ))}
+                  {pacientes.map(p => (<button key={p.id} onClick={() => setPacienteChatSelecionado(p)} className={`w-full text-left p-3 rounded-xl transition-all duration-200 flex flex-col border ${pacienteChatSelecionado?.id === p.id ? 'bg-[#3B4D43] border-[#3B4D43] text-white' : 'bg-white border-transparent hover:bg-gray-50 text-gray-700'}`}><span className="font-bold text-sm truncate">{p.nome || "Sem Nome"}</span></button>))}
                 </div>
               </div>
               <div className={`flex-1 bg-white border border-gray-100 rounded-2xl flex flex-col justify-between overflow-hidden shadow-sm ${pacienteChatSelecionado ? 'flex' : 'hidden md:flex'}`}>
                 {pacienteChatSelecionado ? (
-                  <>
-                    <header className="p-4 border-b border-gray-100 bg-white flex items-center gap-3"><button onClick={() => setPacienteChatSelecionado(null)} className="md:hidden text-gray-400 bg-gray-50 p-2 rounded-lg"><IconX /></button><h4 className="font-bold text-gray-900 text-sm">{pacienteChatSelecionado.nome}</h4></header>
+                  <><header className="p-4 border-b border-gray-100 bg-white flex items-center gap-3"><button onClick={() => setPacienteChatSelecionado(null)} className="md:hidden text-gray-400 bg-gray-50 p-2 rounded-lg"><IconX /></button><h4 className="font-bold text-gray-900 text-sm">{pacienteChatSelecionado.nome}</h4></header>
                     <div className="flex-1 p-4 md:p-6 overflow-y-auto bg-gray-50 space-y-4">
-                      {mensagensChat.map(m => {
-                        const souEu = m.remetente === 'nutri';
-                        return (<div key={m.id} className={`flex ${souEu ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[85%] md:max-w-[70%] p-3.5 rounded-2xl text-sm shadow-sm ${souEu ? 'bg-[#3B4D43] text-white rounded-br-sm' : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'}`}>{m.texto}</div></div>);
-                      })}
+                      {mensagensChat.map(m => { const souEu = m.remetente === 'nutri'; return (<div key={m.id} className={`flex ${souEu ? 'justify-end' : 'justify-start'}`}><div className={`max-w-[85%] md:max-w-[70%] p-3.5 rounded-2xl text-sm shadow-sm ${souEu ? 'bg-[#3B4D43] text-white rounded-br-sm' : 'bg-white text-gray-700 border border-gray-100 rounded-bl-sm'}`}>{m.texto}</div></div>); })}
                     </div>
                     <form onSubmit={enviarMensagemChat} className="p-4 border-t border-gray-100 bg-white flex gap-3"><input type="text" value={novaMensagemTexto} onChange={(e) => setNovaMensagemTexto(e.target.value)} placeholder="Mensagem..." className="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-[#3B4D43]" /><button type="submit" className="bg-[#3B4D43] text-white px-5 py-3 rounded-xl font-bold">Enviar</button></form>
                   </>
