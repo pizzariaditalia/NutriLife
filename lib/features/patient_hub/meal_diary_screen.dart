@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import '../../core/theme/app_colors.dart';
-import '../food_database/food_search_screen.dart';
+import 'package:nutri_life/core/theme/app_colors.dart';
+import 'package:nutri_life/features/food_database/food_search_screen.dart';
 
 class MealDiaryScreen extends StatefulWidget {
   const MealDiaryScreen({Key? key}) : super(key: key);
@@ -13,374 +13,186 @@ class MealDiaryScreen extends StatefulWidget {
 
 class _MealDiaryScreenState extends State<MealDiaryScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
-  late List<DateTime> _listaDeDias;
-  int _diaSelecionadoIndex = 2; 
 
-  @override
-  void initState() {
-    super.initState();
-    _gerarLinhaDoTempoAvancada();
+  String _getTodayDateKey() {
+    final agora = DateTime.now();
+    return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
   }
 
-  void _gerarLinhaDoTempoAvancada() {
-    final hoje = DateTime.now();
-    _listaDeDias = List.generate(5, (index) {
-      return hoje.add(Duration(days: index - 2));
+  void _abrirBuscaAlimentos(String turno) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FoodSearchScreen(turno: turno)),
+    );
+  }
+
+  void _deletarAlimento(Map<String, dynamic> alimento, String dataHoje) async {
+    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje);
+    
+    // Remove o alimento do array e subtrai as calorias consumidas do saldo diário
+    await docRef.update({
+      'historico_alimentos': FieldValue.arrayRemove([alimento]),
+      'calorias_consumidas': FieldValue.increment(-(alimento['calorias'] ?? 0)),
     });
-  }
 
-  String _formatarDataParaFirebase(DateTime data) {
-    return "${data.year}-${data.month.toString().padLeft(2, '0')}-${data.day.toString().padLeft(2, '0')}";
-  }
-
-  String _getNomeDiaSemana(int weekday) {
-    const d = ['DOM', 'SEG', 'TER', 'QUA', 'QUI', 'SEX', 'SÁB', 'DOM'];
-    return d[weekday];
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alimento removido do diário. 🗑️')));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final DateTime dataSelecionada = _listaDeDias[_diaSelecionadoIndex];
-    final String dataKey = _formatarDataParaFirebase(dataSelecionada);
+    final dataHoje = _getTodayDateKey();
 
     return Scaffold(
       backgroundColor: AppColors.backgroundCreme,
       appBar: AppBar(
-        title: const Text('Diário Alimentar'),
+        title: const Text('Meu Cardápio e Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         backgroundColor: AppColors.primarySage,
         elevation: 0,
       ),
       body: StreamBuilder<DocumentSnapshot>(
+        // 🚀 CONEXÃO 1: Lendo o perfil do usuário para pegar o plano alimentar prescrito na web
         stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).snapshots(),
-        builder: (context, userSnapshot) {
+        builder: (context, userSnap) {
           Map<String, dynamic> planoAlimentar = {};
-          
-          if (userSnapshot.hasData && userSnapshot.data!.exists) {
-            final dadosUsuario = userSnapshot.data!.data() as Map<String, dynamic>;
-            planoAlimentar = dadosUsuario['plano_alimentar'] ?? {};
+          if (userSnap.hasData && userSnap.data!.exists) {
+            final dadosUser = userSnap.data!.data() as Map<String, dynamic>?;
+            planoAlimentar = dadosUser?['plano_alimentar'] ?? {};
           }
 
-          final prescricaoCafe = planoAlimentar['cafe'] ?? "Nenhuma orientação cadastrada para este turno.";
-          final prescricaoAlmoco = planoAlimentar['almoco'] ?? "Nenhuma orientação cadastrada para este turno.";
-          final prescricaoLanche = planoAlimentar['lanche'] ?? "Nenhuma orientação cadastrada para este turno.";
-          final prescricaoJantar = planoAlimentar['jantar'] ?? "Nenhuma orientação cadastrada para este turno.";
+          return StreamBuilder<DocumentSnapshot>(
+            // 🚀 CONEXÃO 2: Lendo o diário de hoje para ver o que o paciente já comeu
+            stream: FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).snapshots(),
+            builder: (context, diarioSnap) {
+              List<dynamic> alimentosConsumidos = [];
+              if (diarioSnap.hasData && diarioSnap.data!.exists) {
+                final dadosDiario = diarioSnap.data!.data() as Map<String, dynamic>?;
+                alimentosConsumidos = dadosDiario?['historico_alimentos'] ?? [];
+              }
 
-          return Column(
-            children: [
-              Container(
-                color: AppColors.primarySage,
-                padding: const EdgeInsets.only(bottom: 16),
-                child: SizedBox(
-                  height: 70,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: _listaDeDias.length,
-                    itemBuilder: (context, index) {
-                      final dataItem = _listaDeDias[index];
-                      bool isSelecionado = index == _diaSelecionadoIndex;
-                      return GestureDetector(
-                        onTap: () => setState(() => _diaSelecionadoIndex = index),
-                        child: Container(
-                          width: 60,
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          decoration: BoxDecoration(
-                            color: isSelecionado ? Colors.white : Colors.white.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16),
-                          ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(_getNomeDiaSemana(dataItem.weekday), style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isSelecionado ? AppColors.primarySage : Colors.white70)),
-                              const SizedBox(height: 4),
-                              Text(dataItem.day.toString().padLeft(2, '0'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: isSelecionado ? AppColors.textDark : Colors.white)),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              Expanded(
-                child: StreamBuilder<DocumentSnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('usuarios')
-                      .doc(_userId)
-                      .collection('diario')
-                      .doc(dataKey)
-                      .snapshots(),
-                  builder: (context, diarySnapshot) {
-                    List<dynamic> todosAlimentos = [];
+              return ListView(
+                padding: const EdgeInsets.all(20),
+                children: [
+                  const Text('Plano Alimentar Prescrito 📋', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
+                  const SizedBox(height: 6),
+                  Text('Siga as orientações da sua nutricionista e registre o que consumiu.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  const SizedBox(height: 24),
 
-                    if (diarySnapshot.hasData && diarySnapshot.data!.exists) {
-                      final dadosDiario = diarySnapshot.data!.data() as Map<String, dynamic>;
-                      todosAlimentos = dadosDiario['historico_alimentos'] ?? [];
-                    }
-
-                    return ListView(
-                      padding: const EdgeInsets.all(16),
-                      children: [
-                        _ConstruirBlocoTurnoPremium(
-                          titulo: 'Café da Manhã',
-                          prescricaoTexto: prescricaoCafe,
-                          alimentosDoTurno: todosAlimentos.where((a) => a['turno'] == 'Café da Manhã').toList(),
-                          userId: _userId,
-                          dataKey: dataKey,
-                          kcalPadrao: 400, carbosPadrao: 45, proteinasPadrao: 25, gordurasPadrao: 12,
-                          icone: Icons.wb_twilight_rounded, corIcone: Colors.amber,
-                        ),
-                        const SizedBox(height: 16),
-                        _ConstruirBlocoTurnoPremium(
-                          titulo: 'Almoço',
-                          prescricaoTexto: prescricaoAlmoco,
-                          alimentosDoTurno: todosAlimentos.where((a) => a['turno'] == 'Almoço').toList(),
-                          userId: _userId,
-                          dataKey: dataKey,
-                          kcalPadrao: 700, carbosPadrao: 80, proteinasPadrao: 45, gordurasPadrao: 18,
-                          icone: Icons.wb_sunny_rounded, corIcone: Colors.orange,
-                        ),
-                        const SizedBox(height: 16),
-                        _ConstruirBlocoTurnoPremium(
-                          titulo: 'Lanche',
-                          prescricaoTexto: prescricaoLanche,
-                          alimentosDoTurno: todosAlimentos.where((a) => a['turno'] == 'Lanche').toList(),
-                          userId: _userId,
-                          dataKey: dataKey,
-                          kcalPadrao: 300, carbosPadrao: 35, proteinasPadrao: 20, gordurasPadrao: 8,
-                          icone: Icons.fastfood_rounded, corIcone: AppColors.accentPeach,
-                        ),
-                        const SizedBox(height: 16),
-                        _ConstruirBlocoTurnoPremium(
-                          titulo: 'Jantar',
-                          prescricaoTexto: prescricaoJantar,
-                          alimentosDoTurno: todosAlimentos.where((a) => a['turno'] == 'Jantar').toList(),
-                          userId: _userId,
-                          dataKey: dataKey,
-                          kcalPadrao: 500, carbosPadrao: 40, proteinasPadrao: 40, gordurasPadrao: 15,
-                          icone: Icons.nights_stay_rounded, corIcone: Colors.indigo,
-                        ),
-                        const SizedBox(height: 24),
-                      ],
-                    );
-                  },
-                ),
-              ),
-            ],
+                  _buildSecaoRefeicao('Café da Manhã', Icons.wb_twilight, planoAlimentar['cafe'], alimentosConsumidos, dataHoje),
+                  _buildSecaoRefeicao('Almoço', Icons.wb_sunny, planoAlimentar['almoco'], alimentosConsumidos, dataHoje),
+                  _buildSecaoRefeicao('Lanche', Icons.apple, planoAlimentar['lanche'], alimentosConsumidos, dataHoje),
+                  _buildSecaoRefeicao('Jantar', Icons.nights_stay, planoAlimentar['jantar'], alimentosConsumidos, dataHoje),
+                  
+                  const SizedBox(height: 40),
+                ],
+              );
+            },
           );
-        },
+        }
       ),
     );
   }
-}
 
-class _ConstruirBlocoTurnoPremium extends StatelessWidget {
-  final String titulo;
-  final String prescricaoTexto;
-  final List<dynamic> alimentosDoTurno;
-  final String userId;
-  final String dataKey;
-  final int kcalPadrao;
-  final double carbosPadrao;
-  final double proteinasPadrao;
-  final double gordurasPadrao;
-  final IconData icone;
-  final Color corIcone;
-
-  const _ConstruirBlocoTurnoPremium({
-    required this.titulo,
-    required this.prescricaoTexto,
-    required this.alimentosDoTurno,
-    required this.userId,
-    required this.dataKey,
-    required this.kcalPadrao,
-    required this.carbosPadrao,
-    required this.proteinasPadrao,
-    required this.gordurasPadrao,
-    required this.icone,
-    required this.corIcone,
-  });
-
-  void _executarQuickLog(BuildContext context) async {
-    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataKey);
-
-    await docRef.set({
-      'calorias_consumidas': FieldValue.increment(kcalPadrao),
-      'carbos_consumidos': FieldValue.increment(carbosPadrao),
-      'proteinas_consumidos': FieldValue.increment(proteinasPadrao),
-      'gorduras_consumidos': FieldValue.increment(gordurasPadrao),
-      'historico_alimentos': FieldValue.arrayUnion([
-        {
-          'nome': 'Refeição Prescrita Seguidinha',
-          'turno': titulo,
-          'quantidade': 1.0,
-          'medida_escolhida': 'Plano Completo',
-          'calorias': kcalPadrao,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-        }
-      ])
-    }, SetOptions(merge: true));
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$titulo computado com sucesso! 🎯'), backgroundColor: AppColors.primarySage),
-      );
-    }
-  }
-
-  // 🗑️ FUNÇÃO DE DELETAR (A BORRACHA)
-  void _deletarAlimento(BuildContext context, Map<String, dynamic> item) async {
-    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataKey);
-
-    // Subtrai as calorias e remove o item específico da lista na nuvem
-    await docRef.update({
-      'calorias_consumidas': FieldValue.increment(-(item['calorias'] as num).toInt()),
-      'historico_alimentos': FieldValue.arrayRemove([item])
-    });
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${item['nome']} removido.'), backgroundColor: Colors.redAccent),
-      );
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    int totalKcalTurno = 0;
-    for (var a in alimentosDoTurno) {
-      totalKcalTurno += (a['calorias'] as num).toInt();
-    }
+  Widget _buildSecaoRefeicao(String turno, IconData icone, String? prescricao, List<dynamic> todosConsumidos, String dataHoje) {
+    // Filtra apenas os alimentos consumidos neste turno específico
+    final consumidosNesteTurno = todosConsumidos.where((a) => a['turno'] == turno).toList();
+    
+    // Calcula o total de calorias já ingeridas neste turno
+    int caloriasTurno = consumidosNesteTurno.fold(0, (soma, item) => soma + ((item['calorias'] ?? 0) as int));
 
     return Container(
+      margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 14, offset: const Offset(0, 6))],
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Icon(icone, color: corIcone, size: 24),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(titulo, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-                ),
-                Text('$totalKcalTurno kcal', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.primarySage)),
-              ],
-            ),
-          ),
-          const Divider(height: 1),
+          // CABEÇALHO DO TURNO
           Container(
-            width: double.infinity,
-            margin: const EdgeInsets.all(12),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.backgroundCreme.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.primarySage.withOpacity(0.12)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(color: AppColors.primarySage.withOpacity(0.08), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: const [
-                        Icon(Icons.assignment_turned_in_rounded, size: 14, color: AppColors.primarySage),
-                        SizedBox(width: 6),
-                        Text('Meta Prescrita pela Nutri', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primarySage, letterSpacing: 0.3)),
-                      ],
-                    ),
-                    if (alimentosDoTurno.isEmpty && prescricaoTexto.length > 50)
-                      GestureDetector(
-                        onTap: () => _executarQuickLog(context),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          decoration: BoxDecoration(color: AppColors.primarySage, borderRadius: BorderRadius.circular(8)),
-                          child: const Text('Quick-Log ⚡', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                        ),
-                      ),
+                    Icon(icone, color: AppColors.primarySage, size: 24),
+                    const SizedBox(width: 10),
+                    Text(turno, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textDark)),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  prescricaoTexto,
-                  style: TextStyle(fontSize: 13, color: Colors.grey.shade700, height: 1.4, fontStyle: prescricaoTexto.contains('orientação') ? FontStyle.italic : FontStyle.normal),
-                ),
+                Text('$caloriasTurno kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.accentPeach)),
               ],
             ),
           ),
           
-          // LISTA DE ALIMENTOS COM SWIPE TO DELETE
-          if (alimentosDoTurno.isNotEmpty)
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: alimentosDoTurno.length,
-              separatorBuilder: (context, index) => Divider(color: Colors.grey.shade100, height: 1),
-              itemBuilder: (context, index) {
-                final item = alimentosDoTurno[index];
-                
-                // O widget Dismissible é o que cria a magia de "Deslizar para apagar"
-                return Dismissible(
-                  key: Key(item['timestamp'].toString()), // Identificador único na nuvem
-                  direction: DismissDirection.endToStart,
-                  background: Container(
-                    alignment: Alignment.centerRight,
-                    padding: const EdgeInsets.only(right: 20.0),
-                    color: Colors.redAccent,
-                    child: const Icon(Icons.delete_outline, color: Colors.white),
-                  ),
-                  onDismissed: (direction) {
-                    _deletarAlimento(context, item);
-                  },
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(item['nome'] ?? 'Alimento', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark)),
-                              const SizedBox(height: 2),
-                              Text("Qtd: ${item['quantidade']}x (${item['medida_escolhida'] ?? 'porção'})", style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                            ],
-                          ),
-                        ),
-                        Text('${item['calorias']} kcal', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textDark)),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
-          InkWell(
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(builder: (context) => FoodSearchScreen(turno: titulo)));
-            },
-            borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(color: AppColors.primarySage.withOpacity(0.04), borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24))),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.search, color: AppColors.primarySage, size: 16),
-                  SizedBox(width: 6),
-                  Text('Substituir ou Buscar Alimento', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 12)),
-                ],
-              ),
+          // PRESCRIÇÃO DA NUTRICIONISTA
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade100))),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.assignment, size: 14, color: Colors.grey),
+                    const SizedBox(width: 6),
+                    Text('PRESCRIÇÃO DA NUTRI', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey.shade600, letterSpacing: 0.5)),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  (prescricao != null && prescricao.trim().isNotEmpty) ? prescricao : 'Nenhuma orientação específica cadastrada.',
+                  style: TextStyle(color: (prescricao != null && prescricao.trim().isNotEmpty) ? AppColors.textDark : Colors.grey.shade400, fontSize: 13, height: 1.4, fontStyle: (prescricao != null && prescricao.trim().isNotEmpty) ? FontStyle.normal : FontStyle.italic),
+                ),
+              ],
             ),
           ),
+
+          // LISTA DE ALIMENTOS CONSUMIDOS
+          if (consumidosNesteTurno.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: consumidosNesteTurno.map((alimento) {
+                  return ListTile(
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+                    title: Text(alimento['nome'] ?? 'Alimento', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textDark)),
+                    subtitle: Text('${alimento['quantidade']}x ${alimento['medida_escolhida']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('${alimento['calorias']} kcal', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 13)),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.redAccent, size: 18),
+                          onPressed: () => _deletarAlimento(alimento, dataHoje),
+                        )
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+
+          // BOTÃO ADICIONAR
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () => _abrirBuscaAlimentos(turno),
+                icon: const Icon(Icons.add_circle_outline, color: AppColors.primarySage),
+                label: Text('Registrar consumo no $turno', style: const TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+                style: TextButton.styleFrom(backgroundColor: AppColors.backgroundCreme, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+              ),
+            ),
+          )
         ],
       ),
     );
