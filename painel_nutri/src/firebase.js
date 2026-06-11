@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAuth } from "firebase/auth"; // 🚀 LINHA ADICIONADA AQUI
 
 // Credenciais oficiais do seu projeto Nutri Life
 const firebaseConfig = {
@@ -16,3 +17,6 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta o banco de dados Firestore para usarmos nas telas
 export const db = getFirestore(app);
+
+// 🚀 EXPORTA A AUTENTICAÇÃO PARA O LOGIN DO PAINEL WEB
+export const auth = getAuth(app);
