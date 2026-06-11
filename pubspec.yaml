@@ -28,7 +28,7 @@ dev_dependencies:
 # 🎨 Configuração da Logo Oficial do Nutri Life
 flutter_launcher_icons:
   android: true
-  ios: true
+  ios: false
   image_path: "image/icon.png"
 
 flutter:
