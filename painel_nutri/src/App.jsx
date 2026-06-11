@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
 
@@ -22,62 +22,24 @@ const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" hei
 const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const IconLoader = () => <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
 const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
+const IconUser = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
 
 // ==========================================
-// 🍎 BANCO DE DADOS LOCAL (Alimentos Limpos / Base TACO)
+// 🍎 BANCO DE DADOS LOCAL
 // ==========================================
 const BANCO_ALIMENTOS = [
   { id: 1, nome: "Arroz Branco (cozido)", kcal100g: 130 },
   { id: 2, nome: "Arroz Integral (cozido)", kcal100g: 112 },
   { id: 3, nome: "Feijão Carioca (cozido)", kcal100g: 76 },
-  { id: 4, nome: "Feijão Preto (cozido)", kcal100g: 73 },
   { id: 5, nome: "Batata Doce (cozida)", kcal100g: 86 },
-  { id: 6, nome: "Batata Inglesa (cozida)", kcal100g: 52 },
-  { id: 7, nome: "Mandioca / Aipim (cozido)", kcal100g: 125 },
-  { id: 8, nome: "Macarrão de Trigo (cozido)", kcal100g: 131 },
   { id: 9, nome: "Aveia em Flocos", kcal100g: 394 },
   { id: 10, nome: "Tapioca (goma hidratada)", kcal100g: 240 },
-  { id: 11, nome: "Pão Francês", kcal100g: 300 },
-  { id: 12, nome: "Pão de Forma Integral", kcal100g: 250 },
-  { id: 13, nome: "Cuscuz de Milho (cozido)", kcal100g: 112 },
   { id: 14, nome: "Peito de Frango (grelhado)", kcal100g: 165 },
-  { id: 15, nome: "Patinho Moído (refogado)", kcal100g: 133 },
-  { id: 16, nome: "Coxão Mole (grelhado)", kcal100g: 219 },
-  { id: 17, nome: "Filé de Tilápia / Salmão", kcal100g: 200 },
-  { id: 18, nome: "Atum em lata (água)", kcal100g: 116 },
   { id: 19, nome: "Ovo de Galinha Cozido", kcal100g: 155 },
-  { id: 20, nome: "Ovo Mexido (com fio de óleo)", kcal100g: 190 },
   { id: 21, nome: "Leite Integral (líquido)", kcal100g: 62 },
-  { id: 22, nome: "Leite Desnatado (líquido)", kcal100g: 35 },
-  { id: 23, nome: "Iogurte Natural Integral", kcal100g: 60 },
-  { id: 24, nome: "Iogurte Whey / Proteína", kcal100g: 70 },
-  { id: 25, nome: "Queijo Mussarela", kcal100g: 300 },
-  { id: 26, nome: "Queijo Minas Frescal", kcal100g: 240 },
-  { id: 27, nome: "Requeijão Tradicional", kcal100g: 260 },
   { id: 28, nome: "Whey Protein Concentrado (Pó)", kcal100g: 400 },
-  { id: 29, nome: "Creatina", kcal100g: 0 },
   { id: 30, nome: "Banana Prata", kcal100g: 98 },
-  { id: 31, nome: "Banana Nanica", kcal100g: 92 },
   { id: 32, nome: "Maçã (Fuji/Gala)", kcal100g: 52 },
-  { id: 33, nome: "Mamão Papaya", kcal100g: 43 },
-  { id: 34, nome: "Morango", kcal100g: 32 },
-  { id: 35, nome: "Uva", kcal100g: 69 },
-  { id: 36, nome: "Melancia", kcal100g: 30 },
-  { id: 37, nome: "Laranja", kcal100g: 47 },
-  { id: 38, nome: "Abacate", kcal100g: 160 },
-  { id: 39, nome: "Alface", kcal100g: 15 },
-  { id: 40, nome: "Tomate", kcal100g: 18 },
-  { id: 41, nome: "Cenoura (cozida)", kcal100g: 41 },
-  { id: 42, nome: "Brócolis (cozido)", kcal100g: 35 },
-  { id: 43, nome: "Cebola", kcal100g: 40 },
-  { id: 44, nome: "Abobrinha (cozida)", kcal100g: 17 },
-  { id: 45, nome: "Azeite de Oliva Extra Virgem", kcal100g: 884 },
-  { id: 46, nome: "Manteiga com Sal", kcal100g: 717 },
-  { id: 47, nome: "Pasta de Amendoim (Integral)", kcal100g: 588 },
-  { id: 48, nome: "Castanha de Caju", kcal100g: 553 },
-  { id: 49, nome: "Castanha do Pará", kcal100g: 580 },
-  { id: 50, nome: "Amêndoas", kcal100g: 579 },
-  { id: 51, nome: "Chocolate Amargo (70%)", kcal100g: 540 }
 ];
 
 // ==========================================
@@ -107,21 +69,11 @@ const TelaLogin = () => {
         <div className="flex justify-center mb-6 text-[#3B4D43]"><IconLeaf /></div>
         <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Acesso Restrito</h1>
         <p className="text-sm text-center text-gray-500 mb-8">Painel exclusivo para a Nutricionista.</p>
-        
         {erro && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center font-bold">{erro}</div>}
-
         <form onSubmit={fazerLogin} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label>
-            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label>
-            <input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
-          </div>
-          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">
-            {carregando ? 'Verificando...' : 'Entrar no Painel'}
-          </button>
+          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label><input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
+          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label><input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
+          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">{carregando ? 'Verificando...' : 'Entrar no Painel'}</button>
         </form>
       </div>
     </div>
@@ -144,6 +96,12 @@ export default function App() {
   const [modelosDieta, setModelosDieta] = useState([]);
   const [carregando, setCarregando] = useState(true);
   
+  // 👩‍⚕️ ESTADOS DO PERFIL DA NUTRICIONISTA
+  const [nomeNutri, setNomeNutri] = useState("");
+  const [crnNutri, setCrnNutri] = useState("");
+  const [fotoNutri, setFotoNutri] = useState("");
+  const [salvandoPerfil, setSalvandoPerfil] = useState(false);
+
   const [pacienteSelecionado, setPacienteSelecionado] = useState(null);
   const [dadosDiario, setDadosDiario] = useState(null);
   const [historicoPesoReal, setHistoricoPesoReal] = useState([]);
@@ -156,7 +114,6 @@ export default function App() {
   const [planoAlmoco, setPlanoAlmoco] = useState("");
   const [planoLanche, setPlanoLanche] = useState("");
   const [planoJantar, setPlanoJantar] = useState("");
-  
   const [dataConsulta, setDataConsulta] = useState("");
   const [linkConsulta, setLinkConsulta] = useState("");
 
@@ -167,7 +124,6 @@ export default function App() {
   const [mensagensChat, setMensagensChat] = useState([]);
   const [novaMensagemTexto, setNovaMensagemTexto] = useState("");
 
-  // 🍎 ESTADOS DA CALCULADORA DE ALIMENTOS
   const [buscaAlimento, setBuscaAlimento] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState([]);
   const [buscandoAPI, setBuscandoAPI] = useState(false);
@@ -187,8 +143,18 @@ export default function App() {
 
   // 🔄 CARREGAMENTO INICIAL
   useEffect(() => {
-    if (!usuarioNutri) return; // Só carrega os dados se estiver logado
+    if (!usuarioNutri) return; 
     
+    // Busca Perfil da Nutricionista
+    const unsubPerfil = onSnapshot(doc(db, 'nutricionistas', usuarioNutri.uid), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setNomeNutri(data.nome || "");
+        setCrnNutri(data.crn || "");
+        setFotoNutri(data.foto || "");
+      }
+    });
+
     const unsubPacientes = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
       setPacientes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setCarregando(false);
@@ -199,12 +165,12 @@ export default function App() {
     const unsubModelos = onSnapshot(collection(db, 'modelos_dieta'), (snapshot) => {
       setModelosDieta(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-    return () => { unsubPacientes(); unsubFeed(); unsubModelos(); };
+    
+    return () => { unsubPerfil(); unsubPacientes(); unsubFeed(); unsubModelos(); };
   }, [usuarioNutri]);
 
   useEffect(() => {
     if (!pacienteSelecionado) return;
-
     if (pacienteSelecionado.plano_alimentar) {
       setPlanoCafe(pacienteSelecionado.plano_alimentar.cafe || "");
       setPlanoAlmoco(pacienteSelecionado.plano_alimentar.almoco || "");
@@ -250,14 +216,8 @@ export default function App() {
     }
   }, [abaAtiva, pacienteChatSelecionado]);
 
-  // 🚀 O MOTOR DE BUSCA MUNDIAL (API OpenFoodFacts + Banco Local)
   useEffect(() => {
-    if (buscaAlimento.trim().length < 2) {
-      setResultadosBusca([]);
-      setBuscandoAPI(false);
-      return;
-    }
-
+    if (buscaAlimento.trim().length < 2) { setResultadosBusca([]); setBuscandoAPI(false); return; }
     const termo = buscaAlimento.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
     const local = BANCO_ALIMENTOS.filter(a => a.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo));
     setResultadosBusca(local);
@@ -268,37 +228,37 @@ export default function App() {
         const res = await fetch(`https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(buscaAlimento)}&search_simple=1&action=process&json=1&page_size=10`);
         const data = await res.json();
         if (data.products) {
-          const apiMapeada = data.products
-            .filter(p => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g'])
-            .map(p => ({
-              id: p.code,
-              nome: `${p.product_name} ${p.brands ? `(${p.brands.split(',')[0]})` : ''}`,
-              kcal100g: Math.round(p.nutriments['energy-kcal_100g'])
-            }));
-          
+          const apiMapeada = data.products.filter(p => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g']).map(p => ({
+              id: p.code, nome: `${p.product_name} ${p.brands ? `(${p.brands.split(',')[0]})` : ''}`, kcal100g: Math.round(p.nutriments['energy-kcal_100g'])
+          }));
           setResultadosBusca(prev => {
             const combinada = [...prev, ...apiMapeada];
             const unicos = combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i);
             return unicos;
           });
         }
-      } catch (e) { console.error("Erro na API Mundial:", e); }
-      finally { setBuscandoAPI(false); }
+      } catch (e) { console.error(e); } finally { setBuscandoAPI(false); }
     }, 800);
-
     return () => clearTimeout(timeoutId);
   }, [buscaAlimento]);
 
-  const trocarAba = (aba) => {
-    setAbaAtiva(aba);
-    setMenuMobileAberto(false);
-    if(aba !== 'pacientes') setPacienteSelecionado(null);
+  const trocarAba = (aba) => { setAbaAtiva(aba); setMenuMobileAberto(false); if(aba !== 'pacientes') setPacienteSelecionado(null); };
+
+  // 👩‍⚕️ SALVAR PERFIL DA NUTRICIONISTA
+  const salvarPerfilProfissional = async (e) => {
+    e.preventDefault();
+    setSalvandoPerfil(true);
+    try {
+      await setDoc(doc(db, 'nutricionistas', usuarioNutri.uid), {
+        nome: nomeNutri, crn: crnNutri, foto: fotoNutri, atualizadoEm: serverTimestamp()
+      }, { merge: true });
+      alert("✅ Perfil atualizado com sucesso!");
+    } catch (error) { alert("Erro ao salvar perfil."); }
+    setSalvandoPerfil(false);
   };
 
   const excluirPaciente = async (id) => {
-    if(window.confirm("ALERTA: Tem certeza que deseja excluir este paciente?")) {
-      try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); } catch(e) { alert("Erro ao excluir."); }
-    }
+    if(window.confirm("ALERTA: Excluir paciente?")) { try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); } catch(e) {} }
   };
 
   const salvarPlanoEMetas = async (e) => {
@@ -307,29 +267,21 @@ export default function App() {
     try {
       await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { plano_alimentar: { cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar } });
       await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), { meta_calorias: Number(novaMetaCalorias), meta_agua: Number(novaMetaAgua) });
-      alert("✅ Cardápio e metas sincronizados com sucesso!");
-    } catch (e) { alert("Erro ao salvar."); }
+      alert("✅ Cardápio salvo!");
+    } catch (e) {}
   };
 
   const salvarNotasEAgenda = async () => {
-    try {
-      await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } });
-      alert("✅ Dados internos e agenda salvos!");
-    } catch(e) { alert("Erro ao salvar."); }
+    try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } }); alert("✅ Dados salvos!"); } catch(e) {}
   };
 
   const salvarNovoModelo = async (e) => {
     e.preventDefault();
     if (novoModeloNome.trim() === "") return;
-    try {
-      await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() });
-      setNovoModeloNome(""); alert("✅ Template salvo!");
-    } catch (e) { alert("Erro ao salvar."); }
+    try { await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() }); setNovoModeloNome(""); alert("✅ Salvo!"); } catch (e) {}
   };
 
-  const excluirModelo = async (id) => {
-    if(window.confirm("Apagar este modelo de dieta?")) { await deleteDoc(doc(db, 'modelos_dieta', id)); }
-  };
+  const excluirModelo = async (id) => { if(window.confirm("Apagar modelo?")) { await deleteDoc(doc(db, 'modelos_dieta', id)); } };
 
   const aplicarModelo = (modeloId) => {
     if(modeloId === "") return;
@@ -337,16 +289,21 @@ export default function App() {
     if(modelo) { setPlanoCafe(modelo.cafe || ""); setPlanoAlmoco(modelo.almoco || ""); setPlanoLanche(modelo.lanche || ""); setPlanoJantar(modelo.jantar || ""); }
   };
 
+  // 🚀 PUBLICAÇÃO CARIMBADA COM O NOME DA NUTRI
   const publicarNoFeed = async (e) => {
     e.preventDefault();
     if (novoPostTexto.trim() === "") return;
-    await addDoc(collection(db, 'feed'), { autor: "Nutricionista Oficial", texto: novoPostTexto.trim(), curtidas: [], timestamp: serverTimestamp() });
+    await addDoc(collection(db, 'feed'), { 
+      autor: nomeNutri || "Nutricionista Oficial", 
+      foto_autor: fotoNutri || "",
+      texto: novoPostTexto.trim(), 
+      curtidas: [], 
+      timestamp: serverTimestamp() 
+    });
     setNovoPostTexto("");
   };
 
-  const excluirPost = async (id) => {
-    if(window.confirm("Apagar esta publicação do Feed?")) { await deleteDoc(doc(db, 'feed', id)); }
-  };
+  const excluirPost = async (id) => { if(window.confirm("Apagar post?")) { await deleteDoc(doc(db, 'feed', id)); } };
 
   const enviarMensagemChat = async (e) => {
     e.preventDefault();
@@ -355,19 +312,8 @@ export default function App() {
     setNovaMensagemTexto("");
   };
 
-  const calcularKcalAtual = () => {
-    if(!alimentoSelecionadoCalc) return 0;
-    return Math.round((alimentoSelecionadoCalc.kcal100g / 100) * quantidadeCalc);
-  };
-
-  const injetarAlimentoNoTurno = (turno, setTurnoState, valorAtual) => {
-    if(!alimentoSelecionadoCalc) return;
-    const calorias = calcularKcalAtual();
-    const novaLinha = `• ${quantidadeCalc}g de ${alimentoSelecionadoCalc.nome} (${calorias} kcal)\n`;
-    setTurnoState(valorAtual + (valorAtual ? "\n" : "") + novaLinha);
-    setBuscaAlimento(""); setAlimentoSelecionadoCalc(null);
-  };
-
+  const calcularKcalAtual = () => { if(!alimentoSelecionadoCalc) return 0; return Math.round((alimentoSelecionadoCalc.kcal100g / 100) * quantidadeCalc); };
+  const injetarAlimentoNoTurno = (turno, setTurnoState, valorAtual) => { if(!alimentoSelecionadoCalc) return; const calorias = calcularKcalAtual(); const novaLinha = `• ${quantidadeCalc}g de ${alimentoSelecionadoCalc.nome} (${calorias} kcal)\n`; setTurnoState(valorAtual + (valorAtual ? "\n" : "") + novaLinha); setBuscaAlimento(""); setAlimentoSelecionadoCalc(null); };
   const imprimirProntuario = () => window.print();
 
   const construirCaminhoSVG = () => {
@@ -383,24 +329,13 @@ export default function App() {
     }).join(' ');
   };
 
-  // 🚀 GUARDIÕES DE TELA
   if (verificandoAuth) return <div className="h-screen w-full bg-[#F9F6F0]"></div>;
   if (!usuarioNutri) return <TelaLogin />;
 
-  // 🚀 RENDERIZAÇÃO DO PAINEL
   return (
     <div className="flex h-screen overflow-hidden bg-[#F9F6F0] font-sans text-gray-800 relative">
       <style>{`
-        @media print {
-          aside, .no-print, header button, .md\\:hidden { display: none !important; }
-          main { padding: 0 !important; overflow: visible !important; height: auto !important; }
-          .bg-\\[\\#F9F6F0\\] { background: white !important; }
-          .shadow-sm { box-shadow: none !important; border: 1px solid #eee !important; }
-          textarea { border: none !important; resize: none !important; height: auto !important; overflow: hidden !important; }
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-          .print-header { display: block !important; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #3B4D43; padding-bottom: 10px; }
-        }
-        .print-header { display: none; }
+        @media print { aside, .no-print, header button, .md\\:hidden { display: none !important; } main { padding: 0 !important; overflow: visible !important; height: auto !important; } .bg-\\[\\#F9F6F0\\] { background: white !important; } .shadow-sm { box-shadow: none !important; border: 1px solid #eee !important; } textarea { border: none !important; resize: none !important; height: auto !important; overflow: hidden !important; } body { -webkit-print-color-adjust: exact; print-color-adjust: exact; } .print-header { display: block !important; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #3B4D43; padding-bottom: 10px; } } .print-header { display: none; }
       `}</style>
 
       {menuMobileAberto && <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setMenuMobileAberto(false)} />}
@@ -412,17 +347,21 @@ export default function App() {
             <button className="md:hidden text-white/70 hover:text-white" onClick={() => setMenuMobileAberto(false)}><IconX /></button>
           </div>
           <nav className="space-y-3">
-            {[{ id: 'dashboard', label: 'Visão Geral', icon: <IconLayout /> }, { id: 'pacientes', label: 'Pacientes', icon: <IconUsers /> }, { id: 'templates', label: 'Banco de Dietas', icon: <IconFileText /> }, { id: 'feed', label: 'Gestão do Feed', icon: <IconMegaphone /> }, { id: 'chat', label: 'Consultório', icon: <IconMessage /> }].map(item => (
+            {[
+              { id: 'dashboard', label: 'Visão Geral', icon: <IconLayout /> }, 
+              { id: 'pacientes', label: 'Pacientes', icon: <IconUsers /> }, 
+              { id: 'templates', label: 'Banco de Dietas', icon: <IconFileText /> }, 
+              { id: 'feed', label: 'Gestão do Feed', icon: <IconMegaphone /> }, 
+              { id: 'chat', label: 'Consultório', icon: <IconMessage /> },
+              { id: 'perfil', label: 'Meu Perfil', icon: <IconUser /> } // 🚀 NOVA ABA
+            ].map(item => (
               <button key={item.id} onClick={() => trocarAba(item.id)} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>{item.icon}<span className="text-sm">{item.label}</span></button>
             ))}
           </nav>
         </div>
         <div className="border-t border-white/10 pt-6 flex flex-col gap-4">
-          <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl font-bold text-red-400 hover:bg-red-500/10 transition-all duration-200 text-left">
-            <IconLogOut />
-            <span className="text-sm">Sair da Conta</span>
-          </button>
-          <div className="text-xs text-white/40 flex justify-between items-center px-2"><span>v6.0 API Global</span><span>Admin</span></div>
+          <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl font-bold text-red-400 hover:bg-red-500/10 transition-all duration-200 text-left"><IconLogOut /><span className="text-sm">Sair da Conta</span></button>
+          <div className="text-xs text-white/40 flex justify-between items-center px-2"><span>v6.5 Profissional</span><span>Admin</span></div>
         </div>
       </aside>
 
@@ -433,7 +372,7 @@ export default function App() {
         </div>
 
         <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
-          <div className="print-header"><h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>Clínica Nutri Life Pro</h1><p style={{ color: '#666', fontSize: '12px' }}>Plano Alimentar e Acompanhamento Clínico</p></div>
+          <div className="print-header"><h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>{nomeNutri || 'Clínica Nutri Life Pro'}</h1><p style={{ color: '#666', fontSize: '12px' }}>{crnNutri ? `Nutricionista Responsável • ${crnNutri}` : 'Plano Alimentar e Acompanhamento Clínico'}</p></div>
 
           {abaAtiva === 'dashboard' && (
             <div className="animate-fade-in max-w-6xl mx-auto no-print">
@@ -446,6 +385,56 @@ export default function App() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div><ul className="space-y-3">{pacientes.slice(0, 3).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento</p></div><button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}</ul></div>
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div><ul className="space-y-3">{pacientes.slice(0, 2).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas perfeitamente</p></div><span className="text-xl">🔥</span></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Dados insuficientes.</p>}</ul></div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================
+              🚀 NOVA ABA: PERFIL DA NUTRICIONISTA
+          ========================================= */}
+          {abaAtiva === 'perfil' && (
+            <div className="animate-fade-in max-w-4xl mx-auto no-print">
+              <header className="mb-8">
+                <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Meu Perfil Profissional</h2>
+                <p className="text-gray-500 text-sm mt-1">Configure como os pacientes verão você no aplicativo.</p>
+              </header>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <form onSubmit={salvarPerfilProfissional} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit">
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Nome Completo</label>
+                    <input type="text" placeholder="Ex: Dra. Marcela Silva" value={nomeNutri} onChange={(e) => setNomeNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" required />
+                  </div>
+                  <div className="mb-6">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Número do CRN</label>
+                    <input type="text" placeholder="Ex: CRN-3 12345" value={crnNutri} onChange={(e) => setCrnNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" />
+                  </div>
+                  <div className="mb-8">
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Link da Foto (URL)</label>
+                    <input type="url" placeholder="https://exemplo.com/sua-foto.jpg" value={fotoNutri} onChange={(e) => setFotoNutri(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" />
+                    <p className="text-[10px] text-gray-400 mt-2">Cole o link público de uma imagem sua (do seu Instagram, LinkedIn, etc).</p>
+                  </div>
+                  <button type="submit" disabled={salvandoPerfil} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition">
+                    {salvandoPerfil ? 'Salvando...' : 'Atualizar Meu Perfil'}
+                  </button>
+                </form>
+
+                <div className="bg-gray-50 p-6 md:p-8 rounded-2xl border border-gray-200 shadow-inner flex flex-col items-center text-center">
+                  <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-6">Pré-visualização no Aplicativo</h3>
+                  <div className="w-24 h-24 rounded-full bg-white border-4 border-white shadow-md overflow-hidden mb-4 flex items-center justify-center">
+                    {fotoNutri ? <img src={fotoNutri} alt="Perfil" className="w-full h-full object-cover" /> : <IconUser />}
+                  </div>
+                  <h4 className="font-bold text-xl text-gray-900">{nomeNutri || "Nutricionista Oficial"}</h4>
+                  <p className="text-sm text-emerald-600 font-bold mb-8">{crnNutri || "CRN não informado"}</p>
+                  
+                  <div className="w-full bg-white p-4 rounded-xl shadow-sm text-left opacity-70">
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-full bg-gray-100 overflow-hidden">{fotoNutri && <img src={fotoNutri} alt="P" className="w-full h-full object-cover"/>}</div>
+                      <div><p className="text-xs font-bold text-gray-800">{nomeNutri || "Nutricionista Oficial"}</p><p className="text-[9px] text-gray-400 uppercase">Post Oficial</p></div>
+                    </div>
+                    <p className="text-xs text-gray-600">Olá pacientes, bebam água!</p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -555,7 +544,18 @@ export default function App() {
               <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Mural Educacional</h2></header>
               <form onSubmit={publicarNoFeed} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8"><textarea value={novoPostTexto} onChange={(e) => setNovoPostTexto(e.target.value)} placeholder="Compartilhe com seus pacientes..." className="w-full h-32 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-[#3B4D43] resize-none mb-4 transition" /><div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition">Publicar</button></div></form>
               <div className="space-y-4">
-                {postsFeed.map(post => (<div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start"><div className="flex-1"><span className="text-[10px] text-gray-500 font-bold uppercase mb-2 block">{post.autor}</span><p className="text-sm text-gray-700">{post.texto}</p></div><button onClick={() => excluirPost(post.id)} className="sm:opacity-0 group-hover:opacity-100 text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"><IconTrash /></button></div>))}
+                {postsFeed.map(post => (
+                  <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 mb-2">
+                        {post.foto_autor ? <img src={post.foto_autor} alt="A" className="w-5 h-5 rounded-full object-cover"/> : <div className="bg-gray-100 p-1 rounded-full"><IconUser /></div>}
+                        <span className="text-[10px] text-gray-500 font-bold uppercase">{post.autor}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{post.texto}</p>
+                    </div>
+                    <button onClick={() => excluirPost(post.id)} className="sm:opacity-0 group-hover:opacity-100 text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"><IconTrash /></button>
+                  </div>
+                ))}
               </div>
             </div>
           )}
