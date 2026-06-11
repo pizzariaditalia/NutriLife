@@ -4,8 +4,8 @@ import { db } from './firebase';
 
 export default function App() {
   // 📱 CONTROLES DE INTERFACE E RESPONSIVIDADE
-  const [abaAtiva, setAbaAtiva] = useState('dashboard'); // dashboard, pacientes, feed, chat
-  const [subAbaPaciente, setSubAbaPaciente] = useState('resumo'); // resumo, diario, metas, notas
+  const [abaAtiva, setAbaAtiva] = useState('dashboard'); 
+  const [subAbaPaciente, setSubAbaPaciente] = useState('resumo'); 
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
   
   // 🗄️ ESTADOS DE DADOS
@@ -197,7 +197,9 @@ export default function App() {
       {/* 🖥️ ÁREA CENTRAL DE TRABALHO */}
       <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
         
-        {/* 📊 ABA 0: DASHBOARD / VISÃO GERAL */}
+        {/* =========================================
+            ABA 0: DASHBOARD / VISÃO GERAL
+        ========================================= */}
         {abaAtiva === 'dashboard' && (
           <div className="animate-fade-in">
             <header className="mb-8">
@@ -221,8 +223,10 @@ export default function App() {
           </div>
         )}
 
-        {/* 👥 ABA 1: PACIENTES E PRONTUÁRIOS */}
-        {abaAtiva === 'pacientes' && (!pacienteSelecionado ? (
+        {/* =========================================
+            ABA 1: PACIENTES - LISTA GERAL
+        ========================================= */}
+        {abaAtiva === 'pacientes' && !pacienteSelecionado && (
           <div className="animate-fade-in">
             <header className="mb-6"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Meus Pacientes</h2></header>
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-x-auto">
@@ -242,7 +246,12 @@ export default function App() {
               </table>
             </div>
           </div>
-        ) : (
+        )}
+
+        {/* =========================================
+            ABA 1: PACIENTES - PRONTUÁRIO DETALHADO
+        ========================================= */}
+        {abaAtiva === 'pacientes' && pacienteSelecionado && (
           <div className="animate-fade-in">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
               <div>
@@ -253,7 +262,7 @@ export default function App() {
               <button onClick={() => excluirPaciente(pacienteSelecionado.id)} className="bg-red-50 text-red-600 border border-red-100 hover:bg-red-600 hover:text-white font-bold text-xs px-4 py-2 rounded-xl transition">🗑️ Excluir Paciente</button>
             </div>
 
-            {/* NAVEGAÇÃO INTERNA DO PACIENTE (BOTOES RESPONSIVOS) */}
+            {/* NAVEGAÇÃO INTERNA DO PACIENTE */}
             <div className="flex overflow-x-auto gap-2 mb-6 pb-2 hide-scrollbar">
               {['resumo', 'diario', 'metas', 'notas'].map(aba => (
                 <button key={aba} onClick={() => setSubAbaPaciente(aba)} className={`whitespace-nowrap px-4 py-2 rounded-xl text-sm font-bold transition border ${subAbaPaciente === aba ? 'bg-[#3B4D43] text-white border-[#3B4D43]' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}`}>
@@ -262,23 +271,23 @@ export default function App() {
               ))}
             </div>
 
-            {/* CONTEÚDOS DAS SUB-ABAS */}
+            {/* SUB-ABA: RESUMO CLÍNICO */}
             {subAbaPaciente === 'resumo' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                   <h3 className="font-bold text-lg text-gray-800 mb-4">Anamnese do App</h3>
                   <div className="grid grid-cols-2 gap-4 text-sm mb-4">
-                    <div className="bg-gray-50 p-3 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block">IDADE / GÊNERO</span><span className="font-bold">{fichaClinica.idade}a • {fichaClinica.genero}</span></div>
-                    <div className="bg-gray-50 p-3 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block">ALTURA / PESO INICIAL</span><span className="font-bold">{fichaClinica.altura}m • {fichaClinica.peso_inicial}kg</span></div>
+                    <div className="bg-gray-50 p-3 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block">IDADE / GÊNERO</span><span className="font-bold">{pacienteSelecionado.idade || '-'}a • {pacienteSelecionado.genero || '-'}</span></div>
+                    <div className="bg-gray-50 p-3 rounded-xl"><span className="text-[10px] text-gray-400 font-bold block">ALTURA / PESO INICIAL</span><span className="font-bold">{pacienteSelecionado.altura || '-'}m • {pacienteSelecionado.peso_inicial || '-'}kg</span></div>
                   </div>
-                  <div className="border border-gray-100 p-3 rounded-xl mb-4"><span className="text-[10px] text-gray-400 font-bold block">OBJETIVO & ATIVIDADE</span><span className="font-bold block text-gray-800">{fichaClinica.objetivo} • {fichaClinica.nivel_atividade}</span></div>
-                  <div className="bg-red-50 p-3 rounded-xl text-red-700 text-sm"><span className="text-[10px] text-red-400 font-bold block uppercase">Restrições e Alergias</span><strong>{fichaClinica.restricao_alimentar}</strong></div>
+                  <div className="border border-gray-100 p-3 rounded-xl mb-4"><span className="text-[10px] text-gray-400 font-bold block">OBJETIVO & ATIVIDADE</span><span className="font-bold block text-gray-800">{pacienteSelecionado.objetivo || '-'} • {pacienteSelecionado.nivel_atividade || '-'}</span></div>
+                  <div className="bg-red-50 p-3 rounded-xl text-red-700 text-sm"><span className="text-[10px] text-red-400 font-bold block uppercase">Restrições e Alergias</span><strong>{pacienteSelecionado.restricao_alimentar || 'Nenhuma restrição registrada'}</strong></div>
                 </div>
                 
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex flex-col">
                   <h3 className="font-bold text-lg text-gray-800 mb-4">Evolução de Peso (Gráfico)</h3>
                   <div className="relative w-full flex-1 min-h-[150px] bg-gray-50/50 rounded-xl p-4 border border-gray-100 flex flex-col justify-end">
-                    {historicoPesoReal.length < 2 ? <p className="text-sm text-gray-400 m-auto">Poucos dados.</p> : (
+                    {historicoPesoReal.length < 2 ? <p className="text-sm text-gray-400 m-auto">Aguardando mais pesagens no app...</p> : (
                       <>
                         <svg className="absolute inset-0 w-full h-full p-4" viewBox="0 0 1000 100" preserveAspectRatio="none"><path d={construirCaminhoSVG()} fill="none" stroke="#3B4D43" strokeWidth="4" strokeLinecap="round"/></svg>
                         <div className="flex justify-between text-[10px] text-gray-400 font-bold z-10 w-full">
@@ -291,6 +300,7 @@ export default function App() {
               </div>
             )}
 
+            {/* SUB-ABA: DIÁRIO E FOTOS */}
             {subAbaPaciente === 'diario' && (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
@@ -327,6 +337,7 @@ export default function App() {
               </div>
             )}
 
+            {/* SUB-ABA: METAS E PLANO */}
             {subAbaPaciente === 'metas' && (
               <form onSubmit={salvarPlanoEMetas} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
                 <h3 className="font-bold text-lg text-gray-800 mb-6">Prescrever Cardápio & Metas Diárias</h3>
@@ -344,18 +355,22 @@ export default function App() {
               </form>
             )}
 
+            {/* SUB-ABA: NOTAS PRIVADAS */}
             {subAbaPaciente === 'notas' && (
               <div className="bg-yellow-50 p-6 rounded-2xl border border-yellow-100 shadow-sm">
                 <h3 className="font-bold text-lg text-yellow-800 mb-2">Bloco de Notas Privado 🔒</h3>
                 <p className="text-sm text-yellow-700 mb-4">Apenas você tem acesso a estas anotações. O paciente não vê isto no aplicativo.</p>
-                <textarea value={notasInternas} onChange={(e) => setNotasInternas(e.target.value)} placeholder="Ex: Paciente relatou insônia, ajustar magnésio na próxima consulta..." className="w-full h-48 bg-white border border-yellow-200 rounded-xl p-4 text-sm focus:outline-yellow-500 resize-none mb-4 shadow-inner" />
+                <textarea value={notasInternas} onChange={(e) => setNotasInternas(e.target.value)} placeholder="Ex: Paciente relatou insônia, ajustar magnésio..." className="w-full h-48 bg-white border border-yellow-200 rounded-xl p-4 text-sm focus:outline-yellow-500 resize-none mb-4 shadow-inner" />
                 <button onClick={salvarNotas} disabled={salvandoNotas} className="bg-yellow-600 text-white font-bold px-6 py-2.5 rounded-xl hover:bg-yellow-700 transition">{salvandoNotas ? 'Salvando...' : 'Guardar Anotações'}</button>
               </div>
             )}
+
           </div>
         )}
 
-        {/* 📣 ABA 2: FEED GLOBAL */}
+        {/* =========================================
+            ABA 2: FEED GLOBAL
+        ========================================= */}
         {abaAtiva === 'feed' && (
           <div className="max-w-4xl mx-auto animate-fade-in">
             <header className="mb-6"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Gestão do Feed</h2></header>
@@ -379,7 +394,9 @@ export default function App() {
           </div>
         )}
 
-        {/* 💬 ABA 3: CHAT VIRTUAL */}
+        {/* =========================================
+            ABA 3: CHAT VIRTUAL
+        ========================================= */}
         {abaAtiva === 'chat' && (
           <div className="h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 md:gap-6 animate-fade-in">
             <div className={`w-full md:w-80 bg-white border border-gray-100 rounded-2xl p-4 overflow-y-auto shadow-sm flex-col ${pacienteChatSelecionado ? 'hidden md:flex' : 'flex'}`}>
@@ -395,7 +412,7 @@ export default function App() {
               {pacienteChatSelecionado ? (
                 <>
                   <header className="p-4 border-b border-gray-100 bg-gray-50 flex items-center gap-3">
-                    <button onClick={() => setPacienteChatSelecionado(null)} className="md:hidden text-gray-500 font-bold">←</button>
+                    <button onClick={() => setPacienteChatSelecionado(null)} className="md:hidden text-gray-500 font-bold">← Voltar</button>
                     <h4 className="font-bold text-gray-900 text-sm">Conversando com {pacienteChatSelecionado.nome}</h4>
                   </header>
                   <div className="flex-1 p-4 overflow-y-auto bg-gray-50/50 space-y-4">
