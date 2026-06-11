@@ -127,21 +127,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           appBar: AppBar(
             title: const Text('Meu Painel', style: TextStyle(color: Colors.white)), backgroundColor: AppColors.primarySage, elevation: 0,
             actions: [
-              // 🚀 SINO DE NOTIFICAÇÃO (Fica vermelho se a nutri marcou consulta recentemente)
+              // SINO DE NOTIFICAÇÃO DA CONSULTA
               Badge(
-                isLabelVisible: agendaConsulta != null, // Mock de notificação
+                isLabelVisible: agendaConsulta != null, 
                 backgroundColor: Colors.redAccent,
-                child: IconButton(icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(agendaConsulta != null ? 'Nutri enviou atualizações! Confira abaixo.' : 'Tudo lido!')))),
+                child: IconButton(icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(agendaConsulta != null ? 'Sua nutricionista agendou uma consulta!' : 'Tudo lido!')))),
               ),
               
-              // 🚀 BOLINHA VERMELHA DO CHAT (Escutando a última mensagem)
+              // BOLINHA VERMELHA DO CHAT
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('chats').doc(_userId).collection('mensagens').orderBy('timestamp', descending: true).limit(1).snapshots(),
                 builder: (context, chatSnap) {
                   bool temMensagemNova = false;
                   if (chatSnap.hasData && chatSnap.data!.docs.isNotEmpty) {
                     final ultima = chatSnap.data!.docs.first.data() as Map<String, dynamic>;
-                    // Se a última msg foi da Nutri, mostra a bolinha vermelha!
                     if (ultima['remetente'] == 'nutri') { temMensagemNova = true; }
                   }
                   return Badge(
@@ -222,13 +221,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             final post = doc.data() as Map<String, dynamic>;
                             final List<dynamic> curtidas = post['curtidas'] ?? [];
                             final bool euCurti = curtidas.contains(_userId);
+                            
+                            // 🚀 PUXANDO A FOTO DA NUTRI DO FIREBASE
+                            final String? fotoAutor = post['foto_autor'];
+
                             return Container(
                               margin: const EdgeInsets.only(bottom: 16), padding: const EdgeInsets.all(16), decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade100)),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(children: [CircleAvatar(backgroundColor: AppColors.primarySage.withOpacity(0.2), child: const Icon(Icons.stars, color: AppColors.primarySage)), const SizedBox(width: 12), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(post['autor'] ?? 'Nutricionista', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)), const Text('Post Oficial', style: TextStyle(color: Colors.grey, fontSize: 11))])]),
-                                  const SizedBox(height: 12), Text(post['texto'] ?? '', style: const TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)), const SizedBox(height: 16), const Divider(height: 1),
+                                  Row(
+                                    children: [
+                                      CircleAvatar(
+                                        backgroundColor: AppColors.primarySage.withOpacity(0.2),
+                                        backgroundImage: (fotoAutor != null && fotoAutor.isNotEmpty) ? NetworkImage(fotoAutor) : null,
+                                        child: (fotoAutor == null || fotoAutor.isEmpty) ? const Icon(Icons.person, color: AppColors.primarySage) : null,
+                                      ),
+                                      const SizedBox(width: 12), 
+                                      Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start, 
+                                        children: [
+                                          Text(post['autor'] ?? 'Nutricionista', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark, fontSize: 14)), 
+                                          const Text('Post Oficial', style: TextStyle(color: Colors.grey, fontSize: 11))
+                                        ]
+                                      )
+                                    ]
+                                  ),
+                                  const SizedBox(height: 12), 
+                                  Text(post['texto'] ?? '', style: const TextStyle(color: AppColors.textDark, fontSize: 13, height: 1.4)), 
+                                  const SizedBox(height: 16), 
+                                  const Divider(height: 1),
                                   Row(children: [IconButton(icon: Icon(euCurti ? Icons.favorite : Icons.favorite_border, color: euCurti ? Colors.red : Colors.grey), onPressed: () => _alternarCurtidaPost(doc.id, curtidas)), Text('${curtidas.length} curtidas', style: TextStyle(color: Colors.grey.shade600, fontSize: 12))])
                                 ],
                               ),
