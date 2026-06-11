@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp, setDoc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
 
@@ -48,7 +48,7 @@ const BANCO_ALIMENTOS = [
 // 🔒 COMPONENTE DE LOGIN & CADASTRO (GUARDIÃO)
 // ==========================================
 const TelaLogin = () => {
-  const [isLogin, setIsLogin] = useState(true); // 🚀 Controle de Aba: Login ou Cadastro
+  const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
@@ -56,35 +56,21 @@ const TelaLogin = () => {
 
   const handleAuth = async (e) => {
     e.preventDefault();
-    setCarregando(true); 
-    setErro('');
-    
+    setCarregando(true); setErro('');
     try {
       if (isLogin) {
-        // Fazer Login
         await signInWithEmailAndPassword(auth, email, senha);
       } else {
-        // Criar Conta
         const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
-        // Inicializa o perfil da Nutri no Firestore assim que a conta é criada
         await setDoc(doc(db, 'nutricionistas', userCredential.user.uid), {
-          email: email,
-          nome: "",
-          crn: "",
-          foto: "",
-          criadoEm: serverTimestamp()
+          email: email, nome: "", crn: "", foto: "", criadoEm: serverTimestamp()
         });
       }
     } catch (error) {
-      if (error.code === 'auth/email-already-in-use') {
-        setErro('Este e-mail já está cadastrado. Vá para a tela de Login.');
-      } else if (error.code === 'auth/weak-password') {
-        setErro('A senha deve ter pelo menos 6 caracteres.');
-      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
-        setErro('Acesso negado. E-mail ou senha incorretos.');
-      } else {
-        setErro('Erro de autenticação. Verifique os dados e tente novamente.');
-      }
+      if (error.code === 'auth/email-already-in-use') setErro('Este e-mail já está cadastrado. Faça Login.');
+      else if (error.code === 'auth/weak-password') setErro('A senha deve ter pelo menos 6 caracteres.');
+      else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') setErro('Acesso negado. E-mail ou senha incorretos.');
+      else setErro('Erro de autenticação. Tente novamente.');
     } finally {
       setCarregando(false);
     }
@@ -94,38 +80,19 @@ const TelaLogin = () => {
     <div className="flex h-screen w-full items-center justify-center bg-[#F9F6F0] p-4">
       <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="flex justify-center mb-6 text-[#3B4D43]"><IconLeaf /></div>
-        
-        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
-          {isLogin ? 'Acesso Restrito' : 'Criar Conta Master'}
-        </h1>
-        
-        <p className="text-sm text-center text-gray-500 mb-6">
-          {isLogin ? 'Painel exclusivo para a Nutricionista.' : 'Configure o seu acesso ao painel clínico.'}
-        </p>
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">{isLogin ? 'Acesso Restrito' : 'Criar Conta Master'}</h1>
+        <p className="text-sm text-center text-gray-500 mb-6">{isLogin ? 'Painel exclusivo para a Nutricionista.' : 'Configure o seu acesso ao painel clínico.'}</p>
         
         {erro && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center font-bold">{erro}</div>}
 
         <form onSubmit={handleAuth} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label>
-            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label>
-            <input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required minLength="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
-          </div>
-          
-          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">
-            {carregando ? 'Aguarde...' : (isLogin ? 'Entrar no Painel' : 'Criar Minha Conta')}
-          </button>
+          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label><input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
+          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label><input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required minLength="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
+          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">{carregando ? 'Aguarde...' : (isLogin ? 'Entrar no Painel' : 'Criar Minha Conta')}</button>
         </form>
 
         <div className="mt-8 text-center border-t border-gray-100 pt-6">
-          <button 
-            type="button"
-            onClick={() => { setIsLogin(!isLogin); setErro(''); }} 
-            className="text-sm font-bold text-gray-500 hover:text-[#3B4D43] transition"
-          >
+          <button type="button" onClick={() => { setIsLogin(!isLogin); setErro(''); }} className="text-sm font-bold text-gray-500 hover:text-[#3B4D43] transition">
             {isLogin ? 'Não tem conta? Cadastre-se aqui' : 'Já possui uma conta? Faça Login'}
           </button>
         </div>
@@ -156,6 +123,10 @@ export default function App() {
   const [postsFeed, setPostsFeed] = useState([]);
   const [modelosDieta, setModelosDieta] = useState([]);
   const [carregando, setCarregando] = useState(true);
+
+  // 🧠 ESTADOS DE INTELIGÊNCIA CLÍNICA (RADAR)
+  const [pacientesAlerta, setPacientesAlerta] = useState([]);
+  const [pacientesDestaque, setPacientesDestaque] = useState([]);
   
   // 👩‍⚕️ ESTADOS DO PERFIL DA NUTRICIONISTA
   const [nomeNutri, setNomeNutri] = useState("");
@@ -241,59 +212,80 @@ export default function App() {
     return () => { unsubPerfil(); unsubPacientes(); unsubFeed(); unsubModelos(); };
   }, [usuarioNutri]);
 
-  // 🔴 ESCUTA DE NOTIFICAÇÕES GLOBAIS (Mensagens de Pacientes)
+  // 🧠 VARREDURA DO RADAR DE ATENÇÃO E DESTAQUES (Lógica Real)
+  useEffect(() => {
+    if (pacientes.length === 0) return;
+
+    const processarRadar = async () => {
+      let listaAlertas = [];
+      let listaDestaques = [];
+
+      for (let p of pacientes) {
+        try {
+          const docRef = doc(db, 'usuarios', p.id, 'diario', dataHoje);
+          const docSnap = await getDoc(docRef);
+
+          if (docSnap.exists()) {
+            const di = docSnap.data();
+            const metaKcal = di.meta_calorias || 2000;
+            const consumido = di.calorias_consumidas || 0;
+            const percentual = (consumido / metaKcal) * 100;
+
+            // Lógica: Menos de 30% da meta vai pro Radar. Entre 90% e 110% vai pro Destaque.
+            if (percentual < 30) {
+              listaAlertas.push({ ...p, motivo: "Baixo registro de refeições hoje" });
+            } else if (percentual >= 90 && percentual <= 110) {
+              listaDestaques.push({ ...p, motivo: "Bateu a meta calórica perfeitamente" });
+            }
+          } else {
+            listaAlertas.push({ ...p, motivo: "Nenhum registro de diário hoje" });
+          }
+        } catch (error) {
+          console.error("Erro ao varrer paciente:", error);
+        }
+      }
+
+      setPacientesAlerta(listaAlertas.slice(0, 4));
+      setPacientesDestaque(listaDestaques.slice(0, 3));
+    };
+
+    processarRadar();
+  }, [pacientes, dataHoje]);
+
+  // 🔴 ESCUTA DE NOTIFICAÇÕES GLOBAIS (Mensagens)
   useEffect(() => {
     if (!usuarioNutri || pacientes.length === 0) return;
-    
     let unsubscribeList = [];
-
     pacientes.forEach(p => {
       const unsub = onSnapshot(query(collection(db, 'chats', p.id, 'mensagens'), orderBy('timestamp', 'desc'), limit(1)), (snap) => {
         if (!snap.empty) {
           const ultima = snap.docs[0].data();
-          if (ultima.remetente === 'paciente') {
-            setTemMensagemNova(true);
-          }
+          if (ultima.remetente === 'paciente') setTemMensagemNova(true);
         }
       });
       unsubscribeList.push(unsub);
     });
-
     return () => unsubscribeList.forEach(fn => fn());
   }, [pacientes, usuarioNutri]);
 
   useEffect(() => {
     if (!pacienteSelecionado) return;
     if (pacienteSelecionado.plano_alimentar) {
-      setPlanoCafe(pacienteSelecionado.plano_alimentar.cafe || "");
-      setPlanoAlmoco(pacienteSelecionado.plano_alimentar.almoco || "");
-      setPlanoLanche(pacienteSelecionado.plano_alimentar.lanche || "");
-      setPlanoJantar(pacienteSelecionado.plano_alimentar.jantar || "");
-    } else {
-      setPlanoCafe(""); setPlanoAlmoco(""); setPlanoLanche(""); setPlanoJantar("");
-    }
+      setPlanoCafe(pacienteSelecionado.plano_alimentar.cafe || ""); setPlanoAlmoco(pacienteSelecionado.plano_alimentar.almoco || "");
+      setPlanoLanche(pacienteSelecionado.plano_alimentar.lanche || ""); setPlanoJantar(pacienteSelecionado.plano_alimentar.jantar || "");
+    } else { setPlanoCafe(""); setPlanoAlmoco(""); setPlanoLanche(""); setPlanoJantar(""); }
+    
     setNotasInternas(pacienteSelecionado.notas_nutri || "");
-    setDataConsulta(pacienteSelecionado.agenda?.data || "");
-    setLinkConsulta(pacienteSelecionado.agenda?.link || "");
+    setDataConsulta(pacienteSelecionado.agenda?.data || ""); setLinkConsulta(pacienteSelecionado.agenda?.link || "");
 
     const unsubDiario = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), (snapshot) => {
       if (snapshot.exists()) {
         const dados = snapshot.data();
-        setDadosDiario(dados);
-        setNovaMetaCalorias(dados.meta_calorias || 2000);
-        setNovaMetaAgua(dados.meta_agua || 2500);
-      } else {
-        setDadosDiario({ calorias_consumidas: 0, meta_calorias: 2000, agua_consumida: 0, meta_agua: 2500, historico_alimentos: [] });
-      }
+        setDadosDiario(dados); setNovaMetaCalorias(dados.meta_calorias || 2000); setNovaMetaAgua(dados.meta_agua || 2500);
+      } else { setDadosDiario({ calorias_consumidas: 0, meta_calorias: 2000, agua_consumida: 0, meta_agua: 2500, historico_alimentos: [] }); }
     });
-
-    const unsubPesos = onSnapshot(query(collection(db, 'usuarios', pacienteSelecionado.id, 'historico_peso'), orderBy('timestamp', 'asc'), limit(5)), (snapshot) => {
-      setHistoricoPesoReal(snapshot.docs.map(doc => doc.data()));
-    });
-
-    const unsubFotos = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'galeria', 'fotos_atuais'), (snapshot) => {
-      setFotosPaciente(snapshot.exists() ? snapshot.data() : {});
-    });
+    const unsubPesos = onSnapshot(query(collection(db, 'usuarios', pacienteSelecionado.id, 'historico_peso'), orderBy('timestamp', 'asc'), limit(5)), (snapshot) => { setHistoricoPesoReal(snapshot.docs.map(doc => doc.data())); });
+    const unsubFotos = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'galeria', 'fotos_atuais'), (snapshot) => { setFotosPaciente(snapshot.exists() ? snapshot.data() : {}); });
 
     return () => { unsubDiario(); unsubPesos(); unsubFotos(); };
   }, [pacienteSelecionado]);
@@ -301,12 +293,8 @@ export default function App() {
   useEffect(() => {
     if (abaAtiva === 'chat' && pacienteChatSelecionado) {
       setTemMensagemNova(false); 
-      return onSnapshot(query(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), orderBy('timestamp', 'asc')), (snapshot) => {
-        setMensagensChat(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      });
-    } else {
-      setMensagensChat([]);
-    }
+      return onSnapshot(query(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), orderBy('timestamp', 'asc')), (snapshot) => { setMensagensChat(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))); });
+    } else { setMensagensChat([]); }
   }, [abaAtiva, pacienteChatSelecionado]);
 
   useEffect(() => {
@@ -321,13 +309,8 @@ export default function App() {
         const res = await fetch(`https://br.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(buscaAlimento)}&search_simple=1&action=process&json=1&page_size=10`);
         const data = await res.json();
         if (data.products) {
-          const apiMapeada = data.products.filter(p => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g']).map(p => ({
-              id: p.code, nome: `${p.product_name} ${p.brands ? `(${p.brands.split(',')[0]})` : ''}`, kcal100g: Math.round(p.nutriments['energy-kcal_100g'])
-          }));
-          setResultadosBusca(prev => {
-            const combinada = [...prev, ...apiMapeada];
-            return combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i);
-          });
+          const apiMapeada = data.products.filter(p => p.product_name && p.nutriments && p.nutriments['energy-kcal_100g']).map(p => ({ id: p.code, nome: `${p.product_name} ${p.brands ? `(${p.brands.split(',')[0]})` : ''}`, kcal100g: Math.round(p.nutriments['energy-kcal_100g']) }));
+          setResultadosBusca(prev => { const combinada = [...prev, ...apiMapeada]; return combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i); });
         }
       } catch (e) { console.error(e); } finally { setBuscandoAPI(false); }
     }, 800);
@@ -336,26 +319,18 @@ export default function App() {
 
   const trocarAba = (aba) => { setAbaAtiva(aba); setMenuMobileAberto(false); if(aba !== 'pacientes') setPacienteSelecionado(null); };
 
-  // 🖼️ COMPRESSÃO E UPLOAD DE IMAGEM DA NUTRICIONISTA (BASE64)
   const processarUploadFoto = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400; 
-        const scaleSize = MAX_WIDTH / img.width;
-        canvas.width = MAX_WIDTH;
-        canvas.height = img.height * scaleSize;
-        
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        
-        const base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
-        setFotoNutri(base64Comprimido);
+        const MAX_WIDTH = 400; const scaleSize = MAX_WIDTH / img.width;
+        canvas.width = MAX_WIDTH; canvas.height = img.height * scaleSize;
+        const ctx = canvas.getContext('2d'); ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        setFotoNutri(canvas.toDataURL('image/jpeg', 0.7));
       };
       img.src = event.target.result;
     };
@@ -363,102 +338,37 @@ export default function App() {
   };
 
   const salvarPerfilProfissional = async (e) => {
-    e.preventDefault();
-    setSalvandoPerfil(true);
-    try {
-      await setDoc(doc(db, 'nutricionistas', usuarioNutri.uid), {
-        nome: nomeNutri, crn: crnNutri, foto: fotoNutri, atualizadoEm: serverTimestamp()
-      }, { merge: true });
-      showToast("Perfil atualizado com sucesso!");
-    } catch (error) { showToast("Erro ao salvar perfil.", "error"); }
+    e.preventDefault(); setSalvandoPerfil(true);
+    try { await setDoc(doc(db, 'nutricionistas', usuarioNutri.uid), { nome: nomeNutri, crn: crnNutri, foto: fotoNutri, atualizadoEm: serverTimestamp() }, { merge: true }); showToast("Perfil atualizado com sucesso!"); } catch (error) { showToast("Erro ao salvar perfil.", "error"); }
     setSalvandoPerfil(false);
   };
 
-  const excluirPaciente = (id) => {
-    showConfirm("Tem certeza que deseja excluir este paciente e todo o seu histórico?", async () => {
-      try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); showToast("Paciente excluído."); } catch(e) { showToast("Erro ao excluir.", "error"); }
-    });
-  };
+  const excluirPaciente = (id) => { showConfirm("Tem certeza que deseja excluir este paciente?", async () => { try { await deleteDoc(doc(db, 'usuarios', id)); setPacienteSelecionado(null); showToast("Paciente excluído."); } catch(e) { showToast("Erro ao excluir.", "error"); } }); };
 
   const salvarPlanoEMetas = async (e) => {
-    e.preventDefault();
-    if (!pacienteSelecionado) return;
-    try {
-      await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { plano_alimentar: { cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar } });
-      await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), { meta_calorias: Number(novaMetaCalorias), meta_agua: Number(novaMetaAgua) });
-      showToast("Cardápio e metas salvos no aplicativo!");
-    } catch (e) { showToast("Erro ao salvar cardápio.", "error"); }
+    e.preventDefault(); if (!pacienteSelecionado) return;
+    try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { plano_alimentar: { cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar } }); await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id, 'diario', dataHoje), { meta_calorias: Number(novaMetaCalorias), meta_agua: Number(novaMetaAgua) }); showToast("Cardápio salvo!"); } catch (e) { showToast("Erro.", "error"); }
   };
 
-  const salvarNotasEAgenda = async () => {
-    try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } }); showToast("Dados internos e agenda salvos!"); } 
-    catch(e) { showToast("Erro ao salvar dados.", "error"); }
-  };
+  const salvarNotasEAgenda = async () => { try { await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } }); showToast("Agenda salva!"); } catch(e) { showToast("Erro.", "error"); } };
 
-  const salvarNovoModelo = async (e) => {
-    e.preventDefault();
-    if (novoModeloNome.trim() === "") return;
-    try { await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() }); setNovoModeloNome(""); showToast("Modelo salvo no banco!"); } 
-    catch (e) { showToast("Erro ao salvar modelo.", "error"); }
-  };
+  const salvarNovoModelo = async (e) => { e.preventDefault(); if (novoModeloNome.trim() === "") return; try { await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() }); setNovoModeloNome(""); showToast("Modelo salvo!"); } catch (e) { showToast("Erro.", "error"); } };
 
-  const excluirModelo = (id) => { 
-    showConfirm("Apagar este modelo de dieta permanentemente?", async () => {
-      await deleteDoc(doc(db, 'modelos_dieta', id));
-      showToast("Modelo apagado.");
-    }); 
-  };
+  const excluirModelo = (id) => { showConfirm("Apagar este modelo?", async () => { await deleteDoc(doc(db, 'modelos_dieta', id)); showToast("Modelo apagado."); }); };
 
-  const aplicarModelo = (modeloId) => {
-    if(modeloId === "") return;
-    const modelo = modelosDieta.find(m => m.id === modeloId);
-    if(modelo) { setPlanoCafe(modelo.cafe || ""); setPlanoAlmoco(modelo.almoco || ""); setPlanoLanche(modelo.lanche || ""); setPlanoJantar(modelo.jantar || ""); showToast("Modelo importado para os campos."); }
-  };
+  const aplicarModelo = (modeloId) => { if(modeloId === "") return; const modelo = modelosDieta.find(m => m.id === modeloId); if(modelo) { setPlanoCafe(modelo.cafe || ""); setPlanoAlmoco(modelo.almoco || ""); setPlanoLanche(modelo.lanche || ""); setPlanoJantar(modelo.jantar || ""); showToast("Modelo importado."); } };
 
-  const publicarNoFeed = async (e) => {
-    e.preventDefault();
-    if (novoPostTexto.trim() === "") return;
-    await addDoc(collection(db, 'feed'), { 
-      autor: nomeNutri || "Nutricionista Oficial", 
-      foto_autor: fotoNutri || "",
-      texto: novoPostTexto.trim(), 
-      curtidas: [], 
-      timestamp: serverTimestamp() 
-    });
-    setNovoPostTexto("");
-    showToast("Postagem enviada ao mural dos pacientes!");
-  };
+  const publicarNoFeed = async (e) => { e.preventDefault(); if (novoPostTexto.trim() === "") return; await addDoc(collection(db, 'feed'), { autor: nomeNutri || "Nutricionista Oficial", foto_autor: fotoNutri || "", texto: novoPostTexto.trim(), curtidas: [], timestamp: serverTimestamp() }); setNovoPostTexto(""); showToast("Postagem enviada!"); };
 
-  const excluirPost = (id) => { 
-    showConfirm("Apagar esta postagem do Feed?", async () => {
-      await deleteDoc(doc(db, 'feed', id));
-      showToast("Postagem apagada.");
-    }); 
-  };
+  const excluirPost = (id) => { showConfirm("Apagar postagem?", async () => { await deleteDoc(doc(db, 'feed', id)); showToast("Post apagado."); }); };
 
-  const enviarMensagemChat = async (e) => {
-    e.preventDefault();
-    if (novaMensagemTexto.trim() === "" || !pacienteChatSelecionado) return;
-    await addDoc(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), { texto: novaMensagemTexto.trim(), remetente: 'nutri', timestamp: serverTimestamp() });
-    setNovaMensagemTexto("");
-  };
+  const enviarMensagemChat = async (e) => { e.preventDefault(); if (novaMensagemTexto.trim() === "" || !pacienteChatSelecionado) return; await addDoc(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), { texto: novaMensagemTexto.trim(), remetente: 'nutri', timestamp: serverTimestamp() }); setNovaMensagemTexto(""); };
 
   const calcularKcalAtual = () => { if(!alimentoSelecionadoCalc) return 0; return Math.round((alimentoSelecionadoCalc.kcal100g / 100) * quantidadeCalc); };
   const injetarAlimentoNoTurno = (turno, setTurnoState, valorAtual) => { if(!alimentoSelecionadoCalc) return; const calorias = calcularKcalAtual(); const novaLinha = `• ${quantidadeCalc}g de ${alimentoSelecionadoCalc.nome} (${calorias} kcal)\n`; setTurnoState(valorAtual + (valorAtual ? "\n" : "") + novaLinha); setBuscaAlimento(""); setAlimentoSelecionadoCalc(null); };
   const imprimirProntuario = () => window.print();
 
-  const construirCaminhoSVG = () => {
-    if (historicoPesoReal.length < 2) return "";
-    const larguraTotal = 1000; const alturaTotal = 100;
-    const pesos = historicoPesoReal.map(h => h.peso);
-    const minPeso = Math.min(...pesos) - 2; const maxPeso = Math.max(...pesos) + 2;
-    const deltaPeso = maxPeso - minPeso === 0 ? 1 : maxPeso - minPeso;
-    return historicoPesoReal.map((h, index) => {
-      const x = (index / (historicoPesoReal.length - 1)) * larguraTotal;
-      const y = alturaTotal - ((h.peso - minPeso) / deltaPeso) * alturaTotal;
-      return `${index === 0 ? 'M' : 'L'} ${x} ${y}`;
-    }).join(' ');
-  };
+  const construirCaminhoSVG = () => { if (historicoPesoReal.length < 2) return ""; const larguraTotal = 1000; const alturaTotal = 100; const pesos = historicoPesoReal.map(h => h.peso); const minPeso = Math.min(...pesos) - 2; const maxPeso = Math.max(...pesos) + 2; const deltaPeso = maxPeso - minPeso === 0 ? 1 : maxPeso - minPeso; return historicoPesoReal.map((h, index) => { const x = (index / (historicoPesoReal.length - 1)) * larguraTotal; const y = alturaTotal - ((h.peso - minPeso) / deltaPeso) * alturaTotal; return `${index === 0 ? 'M' : 'L'} ${x} ${y}`; }).join(' '); };
 
   if (verificandoAuth) return <div className="h-screen w-full bg-[#F9F6F0]"></div>;
   if (!usuarioNutri) return <TelaLogin />;
@@ -534,6 +444,9 @@ export default function App() {
         <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
           <div className="print-header"><h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>{nomeNutri || 'Clínica Nutri Life Pro'}</h1><p style={{ color: '#666', fontSize: '12px' }}>{crnNutri ? `Nutricionista Responsável • ${crnNutri}` : 'Plano Alimentar e Acompanhamento Clínico'}</p></div>
 
+          {/* =========================================
+              🚀 DASHBOARD (COM O RADAR DE INTELIGÊNCIA REAL)
+          ========================================= */}
           {abaAtiva === 'dashboard' && (
             <div className="animate-fade-in max-w-6xl mx-auto no-print">
               <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Inteligência Clínica</h2><p className="text-gray-500 text-sm mt-1">Sua central de monitoramento em tempo real.</p></header>
@@ -543,12 +456,48 @@ export default function App() {
                 <div className="bg-gradient-to-br from-[#3B4D43] to-[#2C3E35] p-6 rounded-2xl shadow-sm flex items-start flex-col gap-4 text-white"><div className="bg-white/20 p-3 rounded-xl"><IconTrophy /></div><div><p className="text-white/60 text-[11px] font-bold uppercase tracking-wider mb-1">Impacto Global Estimado</p><p className="text-2xl font-bold text-white mt-1">+ {pacientes.length * 2.5} kg eliminados</p></div></div>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div><ul className="space-y-3">{pacientes.slice(0, 3).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Verificar engajamento</p></div><button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}</ul></div>
-                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm"><div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div><ul className="space-y-3">{pacientes.slice(0, 2).map((p, i) => (<li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl"><div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas perfeitamente</p></div><span className="text-xl">🔥</span></li>))}{pacientes.length === 0 && <p className="text-sm text-gray-400">Dados insuficientes.</p>}</ul></div>
+                
+                {/* 🔴 RADAR DE ATENÇÃO */}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div>
+                  <ul className="space-y-3">
+                    {pacientesAlerta.map((p, i) => (
+                      <li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl">
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p>
+                          <p className="text-[10px] text-red-600 uppercase font-medium">{p.motivo}</p>
+                        </div>
+                        <button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button>
+                      </li>
+                    ))}
+                    {pacientesAlerta.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente hoje. Todos estão na linha!</p>}
+                  </ul>
+                </div>
+
+                {/* 🔥 DESTAQUES DA SEMANA */}
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques do Dia</h3></div>
+                  <ul className="space-y-3">
+                    {pacientesDestaque.map((p, i) => (
+                      <li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                        <div>
+                          <p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p>
+                          <p className="text-[10px] text-amber-700 uppercase font-medium">{p.motivo}</p>
+                        </div>
+                        <span className="text-xl">🔥</span>
+                      </li>
+                    ))}
+                    {pacientesDestaque.length === 0 && <p className="text-sm text-gray-400">Nenhum paciente bateu a meta 100% ainda hoje.</p>}
+                  </ul>
+                </div>
+
               </div>
             </div>
           )}
 
+          {/* =========================================
+              🚀 ABA: PERFIL DA NUTRICIONISTA (UPLOAD DE FOTO)
+          ========================================= */}
           {abaAtiva === 'perfil' && (
             <div className="animate-fade-in max-w-4xl mx-auto no-print">
               <header className="mb-8">
