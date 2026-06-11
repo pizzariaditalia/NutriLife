@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { signInWithEmailAndPassword, createUserWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
 import { db, auth } from './firebase';
 
 // ==========================================
@@ -45,34 +45,90 @@ const BANCO_ALIMENTOS = [
 ];
 
 // ==========================================
-// 🔒 COMPONENTE DE LOGIN (GUARDIÃO)
+// 🔒 COMPONENTE DE LOGIN & CADASTRO (GUARDIÃO)
 // ==========================================
 const TelaLogin = () => {
+  const [isLogin, setIsLogin] = useState(true); // 🚀 Controle de Aba: Login ou Cadastro
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState('');
   const [carregando, setCarregando] = useState(false);
 
-  const fazerLogin = async (e) => {
+  const handleAuth = async (e) => {
     e.preventDefault();
-    setCarregando(true); setErro('');
-    try { await signInWithEmailAndPassword(auth, email, senha); } 
-    catch (error) { setErro('Acesso negado. E-mail ou senha incorretos.'); } 
-    finally { setCarregando(false); }
+    setCarregando(true); 
+    setErro('');
+    
+    try {
+      if (isLogin) {
+        // Fazer Login
+        await signInWithEmailAndPassword(auth, email, senha);
+      } else {
+        // Criar Conta
+        const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
+        // Inicializa o perfil da Nutri no Firestore assim que a conta é criada
+        await setDoc(doc(db, 'nutricionistas', userCredential.user.uid), {
+          email: email,
+          nome: "",
+          crn: "",
+          foto: "",
+          criadoEm: serverTimestamp()
+        });
+      }
+    } catch (error) {
+      if (error.code === 'auth/email-already-in-use') {
+        setErro('Este e-mail já está cadastrado. Vá para a tela de Login.');
+      } else if (error.code === 'auth/weak-password') {
+        setErro('A senha deve ter pelo menos 6 caracteres.');
+      } else if (error.code === 'auth/invalid-credential' || error.code === 'auth/wrong-password') {
+        setErro('Acesso negado. E-mail ou senha incorretos.');
+      } else {
+        setErro('Erro de autenticação. Verifique os dados e tente novamente.');
+      }
+    } finally {
+      setCarregando(false);
+    }
   };
 
   return (
     <div className="flex h-screen w-full items-center justify-center bg-[#F9F6F0] p-4">
       <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
         <div className="flex justify-center mb-6 text-[#3B4D43]"><IconLeaf /></div>
-        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Acesso Restrito</h1>
-        <p className="text-sm text-center text-gray-500 mb-8">Painel exclusivo para a Nutricionista.</p>
+        
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">
+          {isLogin ? 'Acesso Restrito' : 'Criar Conta Master'}
+        </h1>
+        
+        <p className="text-sm text-center text-gray-500 mb-6">
+          {isLogin ? 'Painel exclusivo para a Nutricionista.' : 'Configure o seu acesso ao painel clínico.'}
+        </p>
+        
         {erro && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center font-bold">{erro}</div>}
-        <form onSubmit={fazerLogin} className="space-y-4">
-          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label><input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
-          <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label><input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" /></div>
-          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">{carregando ? 'Verificando...' : 'Entrar no Painel'}</button>
+
+        <form onSubmit={handleAuth} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label>
+            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label>
+            <input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required minLength="6" className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
+          </div>
+          
+          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">
+            {carregando ? 'Aguarde...' : (isLogin ? 'Entrar no Painel' : 'Criar Minha Conta')}
+          </button>
         </form>
+
+        <div className="mt-8 text-center border-t border-gray-100 pt-6">
+          <button 
+            type="button"
+            onClick={() => { setIsLogin(!isLogin); setErro(''); }} 
+            className="text-sm font-bold text-gray-500 hover:text-[#3B4D43] transition"
+          >
+            {isLogin ? 'Não tem conta? Cadastre-se aqui' : 'Já possui uma conta? Faça Login'}
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -189,10 +245,7 @@ export default function App() {
   useEffect(() => {
     if (!usuarioNutri || pacientes.length === 0) return;
     
-    // Simplificando: verificamos se há atividade recente nos chats. 
-    // Em um app de produção, você criaria uma collection 'notificacoes', mas isso resolve o MVP.
     let unsubscribeList = [];
-    let foundUnread = false;
 
     pacientes.forEach(p => {
       const unsub = onSnapshot(query(collection(db, 'chats', p.id, 'mensagens'), orderBy('timestamp', 'desc'), limit(1)), (snap) => {
@@ -208,7 +261,6 @@ export default function App() {
 
     return () => unsubscribeList.forEach(fn => fn());
   }, [pacientes, usuarioNutri]);
-
 
   useEffect(() => {
     if (!pacienteSelecionado) return;
@@ -248,7 +300,6 @@ export default function App() {
 
   useEffect(() => {
     if (abaAtiva === 'chat' && pacienteChatSelecionado) {
-      // Se abrir o chat do paciente, removemos a notificação visual geral temporariamente (simplificado)
       setTemMensagemNova(false); 
       return onSnapshot(query(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), orderBy('timestamp', 'asc')), (snapshot) => {
         setMensagensChat(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -290,13 +341,12 @@ export default function App() {
     const file = e.target.files[0];
     if (!file) return;
 
-    // Se o arquivo for muito grande, o Firestore recusa. Vamos comprimir com Canvas HTML5.
     const reader = new FileReader();
     reader.onload = (event) => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        const MAX_WIDTH = 400; // Tamanho ideal para avatar
+        const MAX_WIDTH = 400; 
         const scaleSize = MAX_WIDTH / img.width;
         canvas.width = MAX_WIDTH;
         canvas.height = img.height * scaleSize;
@@ -304,7 +354,6 @@ export default function App() {
         const ctx = canvas.getContext('2d');
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         
-        // Converte para Base64 comprimido (JPEG 70% qualidade)
         const base64Comprimido = canvas.toDataURL('image/jpeg', 0.7);
         setFotoNutri(base64Comprimido);
       };
@@ -457,7 +506,7 @@ export default function App() {
               { id: 'pacientes', label: 'Pacientes', icon: <IconUsers /> }, 
               { id: 'templates', label: 'Banco de Dietas', icon: <IconFileText /> }, 
               { id: 'feed', label: 'Gestão do Feed', icon: <IconMegaphone /> }, 
-              { id: 'chat', label: 'Consultório', icon: <IconMessage />, badge: temMensagemNova }, // 🔴 BOLINHA AQUI
+              { id: 'chat', label: 'Consultório', icon: <IconMessage />, badge: temMensagemNova }, 
               { id: 'perfil', label: 'Meu Perfil', icon: <IconUser /> }
             ].map(item => (
               <button key={item.id} onClick={() => trocarAba(item.id)} className={`w-full flex items-center justify-between px-4 py-3 rounded-xl font-medium transition-all duration-200 text-left ${abaAtiva === item.id ? 'bg-white text-[#3B4D43] shadow-sm' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
@@ -500,9 +549,6 @@ export default function App() {
             </div>
           )}
 
-          {/* =========================================
-              🚀 ABA: PERFIL DA NUTRICIONISTA (UPLOAD DE FOTO)
-          ========================================= */}
           {abaAtiva === 'perfil' && (
             <div className="animate-fade-in max-w-4xl mx-auto no-print">
               <header className="mb-8">
@@ -512,8 +558,6 @@ export default function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <form onSubmit={salvarPerfilProfissional} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit">
-                  
-                  {/* UPLOAD DE FOTO MODERNO */}
                   <div className="mb-6 flex items-center gap-6">
                     <div className="w-20 h-20 rounded-full bg-gray-100 border border-gray-200 overflow-hidden shrink-0 flex items-center justify-center">
                       {fotoNutri ? <img src={fotoNutri} alt="Perfil" className="w-full h-full object-cover"/> : <IconUser />}
