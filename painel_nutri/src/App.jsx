@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp, setDoc } from 'firebase/firestore';
+import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
 import { db } from './firebase';
 
 // ==========================================
@@ -17,6 +17,27 @@ const IconX = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="2
 const IconTrash = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>;
 const IconLeaf = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 2 8 0 5.5-4.78 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 12 12"/></svg>;
 const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>;
+const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>;
+const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
+
+// ==========================================
+// 🍎 BANCO DE DADOS GLOBAL DE ALIMENTOS (Mockup de Produção)
+// ==========================================
+const BANCO_ALIMENTOS = [
+  { id: 1, nome: "Arroz Branco (cozido)", kcal100g: 130 },
+  { id: 2, nome: "Feijão Carioca (cozido)", kcal100g: 76 },
+  { id: 3, nome: "Peito de Frango (grelhado)", kcal100g: 165 },
+  { id: 4, nome: "Batata Doce (cozida)", kcal100g: 86 },
+  { id: 5, nome: "Ovo Cozido", kcal100g: 155 },
+  { id: 6, nome: "Banana Prata", kcal100g: 98 },
+  { id: 7, nome: "Aveia em Flocos", kcal100g: 394 },
+  { id: 8, nome: "Patinho Moído (refogado)", kcal100g: 133 },
+  { id: 9, nome: "Brócolis (cozido)", kcal100g: 35 },
+  { id: 10, nome: "Whey Protein (Pó)", kcal100g: 380 },
+  { id: 11, nome: "Pão Francês", kcal100g: 300 },
+  { id: 12, nome: "Manteiga", kcal100g: 717 },
+  { id: 13, nome: "Leite Integral", kcal100g: 62 },
+];
 
 // ==========================================
 // 🚀 COMPONENTE PRINCIPAL
@@ -54,9 +75,13 @@ export default function App() {
   const [mensagensChat, setMensagensChat] = useState([]);
   const [novaMensagemTexto, setNovaMensagemTexto] = useState("");
 
+  // 🍎 ESTADOS DA CALCULADORA DE ALIMENTOS
+  const [buscaAlimento, setBuscaAlimento] = useState("");
+  const [alimentoSelecionadoCalc, setAlimentoSelecionadoCalc] = useState(null);
+  const [quantidadeCalc, setQuantidadeCalc] = useState(100);
+
   const dataHoje = new Date().toISOString().split('T')[0];
 
-  // 🔄 CARREGAMENTO INICIAL GERAL
   useEffect(() => {
     const unsubPacientes = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
       setPacientes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -71,7 +96,6 @@ export default function App() {
     return () => { unsubPacientes(); unsubFeed(); unsubModelos(); };
   }, []);
 
-  // 🔄 CARREGAMENTO DO PRONTUÁRIO INDIVIDUAL
   useEffect(() => {
     if (!pacienteSelecionado) return;
 
@@ -110,7 +134,6 @@ export default function App() {
     return () => { unsubDiario(); unsubPesos(); unsubFotos(); };
   }, [pacienteSelecionado]);
 
-  // 🔄 CARREGAMENTO DO CHAT
   useEffect(() => {
     if (abaAtiva === 'chat' && pacienteChatSelecionado) {
       return onSnapshot(query(collection(db, 'chats', pacienteChatSelecionado.id, 'mensagens'), orderBy('timestamp', 'asc')), (snapshot) => {
@@ -121,7 +144,7 @@ export default function App() {
     }
   }, [abaAtiva, pacienteChatSelecionado]);
 
-  // 🚀 FUNÇÕES CRUD (AÇÕES DA NUTRI)
+  // 🚀 FUNÇÕES CRUD E AÇÕES DA NUTRI
   const trocarAba = (aba) => {
     setAbaAtiva(aba);
     setMenuMobileAberto(false);
@@ -210,6 +233,29 @@ export default function App() {
     setNovaMensagemTexto("");
   };
 
+  // 🍎 FUNÇÕES DA CALCULADORA DE ALIMENTOS
+  const alimentosFiltrados = BANCO_ALIMENTOS.filter(a => a.nome.toLowerCase().includes(buscaAlimento.toLowerCase()));
+  
+  const calcularKcalAtual = () => {
+    if(!alimentoSelecionadoCalc) return 0;
+    return Math.round((alimentoSelecionadoCalc.kcal100g / 100) * quantidadeCalc);
+  };
+
+  const injetarAlimentoNoTurno = (turno, setTurnoState, valorAtual) => {
+    if(!alimentoSelecionadoCalc) return;
+    const calorias = calcularKcalAtual();
+    const novaLinha = `• ${quantidadeCalc}g de ${alimentoSelecionadoCalc.nome} (${calorias} kcal)\n`;
+    setTurnoState(valorAtual + (valorAtual ? "\n" : "") + novaLinha);
+    // Reseta a busca após injetar
+    setBuscaAlimento("");
+    setAlimentoSelecionadoCalc(null);
+  };
+
+  // 🖨️ FUNÇÃO DE EXPORTAR PDF
+  const imprimirProntuario = () => {
+    window.print();
+  };
+
   // 📊 GRÁFICO SVG
   const construirCaminhoSVG = () => {
     if (historicoPesoReal.length < 2) return "";
@@ -227,6 +273,22 @@ export default function App() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#F9F6F0] font-sans text-gray-800 relative">
       
+      {/* =========================================
+          ESTILOS DE IMPRESSÃO (CSS Embutido para o PDF)
+      ========================================= */}
+      <style>{`
+        @media print {
+          aside, .no-print, header button, .md\\:hidden { display: none !important; }
+          main { padding: 0 !important; overflow: visible !important; height: auto !important; }
+          .bg-\\[\\#F9F6F0\\] { background: white !important; }
+          .shadow-sm { box-shadow: none !important; border: 1px solid #eee !important; }
+          textarea { border: none !important; resize: none !important; height: auto !important; overflow: hidden !important; }
+          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          .print-header { display: block !important; margin-bottom: 20px; text-align: center; border-bottom: 2px solid #3B4D43; padding-bottom: 10px; }
+        }
+        .print-header { display: none; }
+      `}</style>
+
       {/* 🛡️ OVERLAY MOBILE */}
       {menuMobileAberto && (
         <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden transition-opacity" onClick={() => setMenuMobileAberto(false)} />
@@ -263,7 +325,7 @@ export default function App() {
           </nav>
         </div>
         <div className="border-t border-white/10 pt-6 text-xs text-white/40 flex justify-between items-center">
-          <span>v4.0.0 Analytics</span><span>Admin</span>
+          <span>v5.0 Global</span><span>Admin</span>
         </div>
       </aside>
 
@@ -277,19 +339,24 @@ export default function App() {
         </div>
 
         {/* 📜 MAIN SCROLL */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 lg:p-10 w-full relative">
           
+          {/* CABEÇALHO PARA IMPRESSÃO (Oculto na tela normal, visível no PDF) */}
+          <div className="print-header">
+            <h1 style={{ color: '#3B4D43', fontSize: '24px', fontWeight: 'bold' }}>Clínica Nutri Life Pro</h1>
+            <p style={{ color: '#666', fontSize: '12px' }}>Plano Alimentar e Acompanhamento Clínico</p>
+          </div>
+
           {/* =========================================
-              ABA 0: DASHBOARD (VISÃO GERAL ANALÍTICA)
+              ABA 0: DASHBOARD
           ========================================= */}
           {abaAtiva === 'dashboard' && (
-            <div className="animate-fade-in max-w-6xl mx-auto">
+            <div className="animate-fade-in max-w-6xl mx-auto no-print">
               <header className="mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Inteligência Clínica</h2>
                 <p className="text-gray-500 text-sm mt-1">Sua central de monitoramento em tempo real.</p>
               </header>
 
-              {/* DADOS GLOBAIS */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-start flex-col gap-4">
                   <div className="bg-emerald-50 text-emerald-600 p-3 rounded-xl"><IconUsers /></div>
@@ -306,33 +373,24 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* RADAR DE ATENÇÃO (Mockup Inteligente) */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="text-red-500"><IconAlert /></div>
-                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3>
-                  </div>
+                  <div className="flex items-center gap-2 mb-6"><div className="text-red-500"><IconAlert /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Radar de Atenção</h3></div>
                   <ul className="space-y-3">
                     {pacientes.slice(0, 3).map((p, i) => (
                       <li key={i} className="flex items-center justify-between p-3 bg-red-50 border border-red-100 rounded-xl">
-                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento esta semana</p></div>
+                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-red-600 uppercase font-medium">Baixo engajamento</p></div>
                         <button onClick={() => {setPacienteChatSelecionado(p); trocarAba('chat');}} className="text-xs bg-white border border-red-200 text-red-600 px-3 py-1.5 rounded-lg font-bold hover:bg-red-600 hover:text-white transition">Cobrar</button>
                       </li>
                     ))}
                     {pacientes.length === 0 && <p className="text-sm text-gray-400">Nenhum alerta pendente.</p>}
                   </ul>
                 </div>
-
-                {/* DESTAQUES (Mockup Inteligente) */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex items-center gap-2 mb-6">
-                    <div className="text-amber-500"><IconTrophy /></div>
-                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3>
-                  </div>
+                  <div className="flex items-center gap-2 mb-6"><div className="text-amber-500"><IconTrophy /></div><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Destaques da Semana</h3></div>
                   <ul className="space-y-3">
                     {pacientes.slice(0, 2).map((p, i) => (
                       <li key={i} className="flex items-center justify-between p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu a meta hídrica 7 dias seguidos</p></div>
+                        <div><p className="text-sm font-bold text-gray-800">{p.nome || 'Paciente'}</p><p className="text-[10px] text-amber-700 uppercase font-medium">Bateu metas perfeitamente</p></div>
                         <span className="text-xl">🔥</span>
                       </li>
                     ))}
@@ -344,32 +402,28 @@ export default function App() {
           )}
 
           {/* =========================================
-              ABA: BANCO DE DIETAS (TEMPLATES)
+              ABA: TEMPLATES (BANCO DE DIETAS)
           ========================================= */}
           {abaAtiva === 'templates' && (
-            <div className="animate-fade-in max-w-6xl mx-auto">
+            <div className="animate-fade-in max-w-6xl mx-auto no-print">
               <header className="mb-8">
                 <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Banco de Dietas</h2>
                 <p className="text-gray-500 text-sm mt-1">Crie templates prontos para acelerar sua prescrição clínica.</p>
               </header>
-              
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* FORMULÁRIO DE CRIAÇÃO */}
                 <div className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm h-fit">
                   <h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Criar Novo Template</h3>
                   <form onSubmit={salvarNovoModelo}>
-                    <div className="mb-6"><label className="block text-xs font-bold text-gray-500 mb-2">Nome do Modelo (Ex: Emagrecimento 1500kcal)</label><input type="text" value={novoModeloNome} onChange={(e)=>setNovoModeloNome(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43] transition" required /></div>
+                    <div className="mb-6"><label className="block text-xs font-bold text-gray-500 mb-2">Nome do Modelo</label><input type="text" value={novoModeloNome} onChange={(e)=>setNovoModeloNome(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" required /></div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                       <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
                       <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
                       <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
                       <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-20 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
                     </div>
-                    <div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition shadow-sm">💾 Salvar no Banco</button></div>
+                    <div className="flex justify-end"><button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] shadow-sm">💾 Salvar no Banco</button></div>
                   </form>
                 </div>
-
-                {/* LISTA DE MODELOS */}
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit">
                   <h3 className="font-bold text-gray-900 mb-6 text-sm uppercase tracking-wider">Modelos Salvos</h3>
                   <div className="space-y-3">
@@ -391,11 +445,11 @@ export default function App() {
               ABA: PACIENTES - LISTA GERAL
           ========================================= */}
           {abaAtiva === 'pacientes' && !pacienteSelecionado && (
-            <div className="animate-fade-in max-w-6xl mx-auto">
+            <div className="animate-fade-in max-w-6xl mx-auto no-print">
               <header className="mb-8 flex flex-col md:flex-row justify-between md:items-end gap-4">
-                <div><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Pacientes</h2><p className="text-gray-500 text-sm mt-1">Gerencie a evolução clínica de forma individual.</p></div>
+                <div><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Pacientes</h2><p className="text-gray-500 text-sm mt-1">Gerencie a evolução clínica individualmente.</p></div>
               </header>
-              {carregando ? <div className="text-center py-12 text-gray-400 text-sm">Carregando...</div> : pacientes.length === 0 ? <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 border-dashed">Nenhum paciente cadastrado.</div> : (
+              {carregando ? <div className="text-center py-12 text-gray-400 text-sm">Carregando...</div> : pacientes.length === 0 ? <div className="text-center py-12 text-gray-400 text-sm bg-white rounded-2xl border border-gray-100 border-dashed">Nenhum paciente.</div> : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {pacientes.map((p) => (
                     <div key={p.id} onClick={() => {setPacienteSelecionado(p); setSubAbaPaciente('resumo');}} className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex flex-col justify-between h-44">
@@ -416,12 +470,19 @@ export default function App() {
           ========================================= */}
           {abaAtiva === 'pacientes' && pacienteSelecionado && (
             <div className="animate-fade-in max-w-6xl mx-auto">
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <div><button onClick={() => setPacienteSelecionado(null)} className="text-xs font-bold text-gray-400 hover:text-[#3B4D43] mb-2 transition">← Voltar aos pacientes</button><h2 className="text-2xl md:text-3xl font-bold text-gray-900">{pacienteSelecionado.nome}</h2></div>
-                <button onClick={() => excluirPaciente(pacienteSelecionado.id)} className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconTrash /> Excluir</button>
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 print-header">
+                <div>
+                  <button onClick={() => setPacienteSelecionado(null)} className="text-xs font-bold text-gray-400 hover:text-[#3B4D43] mb-2 transition no-print">← Voltar</button>
+                  <h2 className="text-2xl md:text-3xl font-bold text-gray-900">{pacienteSelecionado.nome}</h2>
+                  <p className="text-xs text-gray-500 mt-1">Prontuário Médico • ID: {pacienteSelecionado.id.substring(0,8)}</p>
+                </div>
+                <div className="flex gap-2 no-print">
+                  <button onClick={imprimirProntuario} className="bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconPrinter /> Exportar PDF</button>
+                  <button onClick={() => excluirPaciente(pacienteSelecionado.id)} className="bg-red-50 text-red-600 hover:bg-red-600 hover:text-white border border-red-100 font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2"><IconTrash /> Excluir</button>
+                </div>
               </div>
 
-              <div className="flex overflow-x-auto gap-3 mb-8 pb-2 hide-scrollbar">
+              <div className="flex overflow-x-auto gap-3 mb-8 pb-2 hide-scrollbar no-print">
                 {[ { id: 'resumo', label: 'Resumo Clínico' }, { id: 'diario', label: 'Diário & Fotos' }, { id: 'metas', label: 'Cardápio & Metas' }, { id: 'notas', label: 'Notas & Agenda' }].map(aba => (
                   <button key={aba.id} onClick={() => setSubAbaPaciente(aba.id)} className={`whitespace-nowrap px-4 py-2.5 rounded-xl text-xs font-bold transition-colors ${subAbaPaciente === aba.id ? 'bg-[#3B4D43] text-white shadow-sm' : 'bg-white text-gray-500 border border-gray-200 hover:bg-gray-50'}`}>{aba.label}</button>
                 ))}
@@ -482,45 +543,102 @@ export default function App() {
                 </div>
               )}
 
+              {/* 🚀 SUB-ABA METAS REFORMULADA: CALCULADORA GLOBAL DE ALIMENTOS */}
               {subAbaPaciente === 'metas' && (
-                <form onSubmit={salvarPlanoEMetas} className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
-                  <div className="flex justify-between items-center mb-6">
-                    <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Prescrição e Metas</h3>
-                    <select onChange={(e) => aplicarModelo(e.target.value)} className="bg-gray-50 border border-gray-200 text-sm text-gray-600 rounded-lg px-3 py-1.5 outline-none">
-                      <option value="">Importar Modelo Salvo...</option>
-                      {modelosDieta.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
-                    </select>
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* ESQUERDA: EDITOR DO PLANO E METAS */}
+                  <form onSubmit={salvarPlanoEMetas} className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
+                    <div className="flex justify-between items-center mb-6 no-print">
+                      <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Prescrição Clínica</h3>
+                      <select onChange={(e) => aplicarModelo(e.target.value)} className="bg-gray-50 border border-gray-200 text-xs font-bold text-gray-600 rounded-lg px-3 py-1.5 outline-none">
+                        <option value="">+ Importar Modelo Rápido...</option>
+                        {modelosDieta.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
+                      </select>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                      <div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Calórica (kcal)</label><input type="number" value={novaMetaCalorias} onChange={(e)=>setNovaMetaCalorias(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-[#3B4D43] focus:outline-[#3B4D43]" /></div>
+                      <div><label className="block text-[11px] font-bold text-gray-400 uppercase mb-2">Meta Hídrica (ml)</label><input type="number" value={novaMetaAgua} onChange={(e)=>setNovaMetaAgua(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm font-bold text-blue-600 focus:outline-[#3B4D43]" /></div>
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div><label className="block text-[11px] font-bold text-gray-500 mb-1">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
+                      <div><label className="block text-[11px] font-bold text-gray-500 mb-1">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
+                      <div><label className="block text-[11px] font-bold text-gray-500 mb-1">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
+                      <div><label className="block text-[11px] font-bold text-gray-500 mb-1">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" placeholder="Insira alimentos aqui..." /></div>
+                    </div>
+                    
+                    <div className="flex justify-end pt-6 mt-4 border-t border-gray-100 no-print">
+                      <button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition shadow-sm">Sincronizar Prescrição no App</button>
+                    </div>
+                  </form>
+
+                  {/* DIREITA: CALCULADORA GLOBAL (ASSISTENTE) */}
+                  <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit no-print sticky top-4">
+                    <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><IconSearch /> Assistente de Prescrição</h3>
+                    <p className="text-xs text-gray-500 mb-4 leading-relaxed">Busque um alimento no banco de dados, calcule a porção e injete diretamente no plano ao lado.</p>
+                    
+                    <input 
+                      type="text" 
+                      placeholder="Buscar alimento (Ex: Frango)..." 
+                      value={buscaAlimento} 
+                      onChange={(e) => setBuscaAlimento(e.target.value)} 
+                      className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-emerald-500 mb-2"
+                    />
+
+                    {/* Resultados da Busca */}
+                    {buscaAlimento && !alimentoSelecionadoCalc && (
+                      <div className="bg-white border border-gray-100 rounded-xl shadow-lg max-h-48 overflow-y-auto absolute w-[calc(100%-3rem)] z-10">
+                        {alimentosFiltrados.length === 0 ? <p className="text-xs text-gray-400 p-3">Nenhum resultado encontrado.</p> : 
+                          alimentosFiltrados.map(a => (
+                            <button key={a.id} type="button" onClick={() => setAlimentoSelecionadoCalc(a)} className="w-full text-left p-3 hover:bg-emerald-50 border-b border-gray-50 last:border-0 transition">
+                              <p className="text-xs font-bold text-gray-800">{a.nome}</p>
+                              <p className="text-[10px] text-gray-400">{a.kcal100g} kcal / 100g</p>
+                            </button>
+                          ))
+                        }
+                      </div>
+                    )}
+
+                    {/* Painel da Porção (Após Selecionar) */}
+                    {alimentoSelecionadoCalc && (
+                      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4 relative">
+                        <button type="button" onClick={() => {setAlimentoSelecionadoCalc(null); setBuscaAlimento("");}} className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"><IconX /></button>
+                        <p className="text-xs font-bold text-emerald-900 mb-3 pr-6">{alimentoSelecionadoCalc.nome}</p>
+                        
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Quantidade (g)</label>
+                            <input type="number" value={quantidadeCalc} onChange={(e) => setQuantidadeCalc(e.target.value)} className="w-full bg-white border border-emerald-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:outline-emerald-500" />
+                          </div>
+                          <div className="flex-1">
+                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Calorias</label>
+                            <div className="w-full bg-emerald-100 rounded-lg p-2 text-sm font-bold text-emerald-800 text-center">{calcularKcalAtual()} kcal</div>
+                          </div>
+                        </div>
+
+                        <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 text-center">Injetar refeição no:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Café', setPlanoCafe, planoCafe)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Café</button>
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Almoço', setPlanoAlmoco, planoAlmoco)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Almoço</button>
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Lanche', setPlanoLanche, planoLanche)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Lanche</button>
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Jantar', setPlanoJantar, planoJantar)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Jantar</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Meta Calórica (kcal)</label><input type="number" value={novaMetaCalorias} onChange={(e)=>setNovaMetaCalorias(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" /></div>
-                    <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Meta Hídrica (ml)</label><input type="number" value={novaMetaAgua} onChange={(e)=>setNovaMetaAgua(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-[#3B4D43]" /></div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                    <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">CAFÉ DA MANHÃ</label><textarea value={planoCafe} onChange={(e)=>setPlanoCafe(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                    <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">ALMOÇO</label><textarea value={planoAlmoco} onChange={(e)=>setPlanoAlmoco(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                    <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">LANCHE</label><textarea value={planoLanche} onChange={(e)=>setPlanoLanche(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                    <div><label className="block text-[10px] font-bold text-gray-400 uppercase mb-2">JANTAR</label><textarea value={planoJantar} onChange={(e)=>setPlanoJantar(e.target.value)} className="w-full h-24 bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm resize-none focus:outline-[#3B4D43]" /></div>
-                  </div>
-                  <div className="flex justify-end pt-4 border-t border-gray-100">
-                    <button type="submit" className="w-full md:w-auto bg-[#3B4D43] text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-[#2C3E35] transition">Sincronizar Prescrição</button>
-                  </div>
-                </form>
+                </div>
               )}
 
               {subAbaPaciente === 'notas' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* NOTAS PRIVADAS */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 no-print">
                   <div className="bg-amber-50 p-6 md:p-8 rounded-2xl border border-amber-100 shadow-sm">
                     <h3 className="font-bold text-amber-900 mb-2 text-sm uppercase tracking-wider">Anotações Privadas</h3>
                     <textarea value={notasInternas} onChange={(e) => setNotasInternas(e.target.value)} placeholder="Anotações internas..." className="w-full h-48 bg-white border border-amber-200/60 rounded-xl p-4 text-sm focus:outline-amber-500 resize-none mb-6 shadow-sm" />
                     <button onClick={salvarNotasEAgenda} className="w-full md:w-auto bg-amber-600 text-white text-sm font-bold px-8 py-3 rounded-xl hover:bg-amber-700 transition">Salvar Dados</button>
                   </div>
-                  {/* AGENDA VIRTUAL */}
                   <div className="bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
-                    <div className="flex items-center gap-2 mb-6 text-indigo-600">
-                      <IconCalendar />
-                      <h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Agendar Consulta</h3>
-                    </div>
+                    <div className="flex items-center gap-2 mb-6 text-indigo-600"><IconCalendar /><h3 className="font-bold text-gray-900 text-sm uppercase tracking-wider">Agendar Consulta</h3></div>
                     <div className="space-y-4 mb-6">
                       <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Data e Hora (Ex: 15/10 às 14h)</label><input type="text" value={dataConsulta} onChange={(e)=>setDataConsulta(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div>
                       <div><label className="block text-xs font-bold text-gray-400 uppercase mb-2">Link da Chamada (Meet/Zoom)</label><input type="text" value={linkConsulta} onChange={(e)=>setLinkConsulta(e.target.value)} placeholder="https://meet.google.com/..." className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 text-sm focus:outline-indigo-500 transition" /></div>
@@ -533,12 +651,10 @@ export default function App() {
           )}
 
           {/* =========================================
-              ABA: FEED E CHAT
+              ABA: FEED (Mantido Intacto e Funcional)
           ========================================= */}
-          {/* O FEED e o CHAT permanecem estruturalmente inalterados da versão anterior, 
-              mantendo a coerência visual e as funções 100% ativas para a Nutricionista. */}
           {abaAtiva === 'feed' && (
-            <div className="animate-fade-in max-w-4xl mx-auto">
+            <div className="animate-fade-in max-w-4xl mx-auto no-print">
               <header className="mb-8"><h2 className="text-2xl md:text-3xl font-bold text-gray-900">Mural Educacional</h2></header>
               <form onSubmit={publicarNoFeed} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm mb-8">
                 <textarea value={novoPostTexto} onChange={(e) => setNovoPostTexto(e.target.value)} placeholder="Compartilhe com seus pacientes..." className="w-full h-32 bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:outline-[#3B4D43] resize-none mb-4 transition" />
@@ -547,10 +663,7 @@ export default function App() {
               <div className="space-y-4">
                 {postsFeed.map(post => (
                   <div key={post.id} className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm relative group flex justify-between items-start">
-                    <div className="flex-1">
-                      <span className="text-[10px] text-gray-500 font-bold uppercase mb-2 block">{post.autor}</span>
-                      <p className="text-sm text-gray-700">{post.texto}</p>
-                    </div>
+                    <div className="flex-1"><span className="text-[10px] text-gray-500 font-bold uppercase mb-2 block">{post.autor}</span><p className="text-sm text-gray-700">{post.texto}</p></div>
                     <button onClick={() => excluirPost(post.id)} className="sm:opacity-0 group-hover:opacity-100 text-red-500 bg-red-50 p-2 rounded-lg hover:bg-red-500 hover:text-white transition-all"><IconTrash /></button>
                   </div>
                 ))}
@@ -558,8 +671,11 @@ export default function App() {
             </div>
           )}
 
+          {/* =========================================
+              ABA: CHAT (Mantido Intacto e Funcional)
+          ========================================= */}
           {abaAtiva === 'chat' && (
-            <div className="h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 md:gap-6 animate-fade-in max-w-6xl mx-auto">
+            <div className="h-[calc(100vh-10rem)] md:h-[calc(100vh-8rem)] flex flex-col md:flex-row gap-4 md:gap-6 animate-fade-in max-w-6xl mx-auto no-print">
               <div className={`w-full md:w-80 bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm flex flex-col shrink-0 ${pacienteChatSelecionado ? 'hidden md:flex' : 'flex'}`}>
                 <div className="p-4 border-b border-gray-100 bg-gray-50"><h3 className="font-bold text-sm text-gray-900 uppercase">Canais Privados</h3></div>
                 <div className="flex-1 overflow-y-auto p-3 space-y-2">
