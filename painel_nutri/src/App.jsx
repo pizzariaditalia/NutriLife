@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, doc, onSnapshot, updateDoc, addDoc, deleteDoc, query, orderBy, limit, serverTimestamp } from 'firebase/firestore';
-import { db } from './firebase';
+import { signInWithEmailAndPassword, onAuthStateChanged, signOut } from 'firebase/auth';
+import { db, auth } from './firebase';
 
 // ==========================================
 // 🎨 ÍCONES VETORIAIS PROFISSIONAIS (SVG)
@@ -20,38 +21,120 @@ const IconCalendar = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" he
 const IconPrinter = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>;
 const IconSearch = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const IconLoader = () => <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>;
+const IconLogOut = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>;
 
 // ==========================================
 // 🍎 BANCO DE DADOS LOCAL (Alimentos Limpos / Base TACO)
 // ==========================================
-const BANCO_LOCAL = [
-  { id: 'loc_1', nome: "Arroz Branco (cozido)", kcal100g: 130 },
-  { id: 'loc_2', nome: "Arroz Integral (cozido)", kcal100g: 112 },
-  { id: 'loc_3', nome: "Feijão Carioca (cozido)", kcal100g: 76 },
-  { id: 'loc_4', nome: "Feijão Preto (cozido)", kcal100g: 73 },
-  { id: 'loc_5', nome: "Batata Doce (cozida)", kcal100g: 86 },
-  { id: 'loc_6', nome: "Mandioca / Aipim (cozido)", kcal100g: 125 },
-  { id: 'loc_7', nome: "Macarrão de Trigo (cozido)", kcal100g: 131 },
-  { id: 'loc_8', nome: "Aveia em Flocos", kcal100g: 394 },
-  { id: 'loc_9', nome: "Tapioca (goma hidratada)", kcal100g: 240 },
-  { id: 'loc_10', nome: "Pão Francês", kcal100g: 300 },
-  { id: 'loc_11', nome: "Peito de Frango (grelhado)", kcal100g: 165 },
-  { id: 'loc_12', nome: "Patinho Moído (refogado)", kcal100g: 133 },
-  { id: 'loc_13', nome: "Filé de Tilápia / Salmão", kcal100g: 200 },
-  { id: 'loc_14', nome: "Ovo de Galinha Cozido", kcal100g: 155 },
-  { id: 'loc_15', nome: "Ovo Mexido (com fio de óleo)", kcal100g: 190 },
-  { id: 'loc_16', nome: "Leite Integral (líquido)", kcal100g: 62 },
-  { id: 'loc_17', nome: "Leite Desnatado (líquido)", kcal100g: 35 },
-  { id: 'loc_18', nome: "Queijo Mussarela", kcal100g: 300 },
-  { id: 'loc_19', nome: "Banana Prata", kcal100g: 98 },
-  { id: 'loc_20', nome: "Maçã", kcal100g: 52 },
-  { id: 'loc_21', nome: "Abacate", kcal100g: 160 },
-  { id: 'loc_22', nome: "Alface", kcal100g: 15 },
-  { id: 'loc_23', nome: "Tomate", kcal100g: 18 },
-  { id: 'loc_24', nome: "Azeite de Oliva Extra Virgem", kcal100g: 884 }
+const BANCO_ALIMENTOS = [
+  { id: 1, nome: "Arroz Branco (cozido)", kcal100g: 130 },
+  { id: 2, nome: "Arroz Integral (cozido)", kcal100g: 112 },
+  { id: 3, nome: "Feijão Carioca (cozido)", kcal100g: 76 },
+  { id: 4, nome: "Feijão Preto (cozido)", kcal100g: 73 },
+  { id: 5, nome: "Batata Doce (cozida)", kcal100g: 86 },
+  { id: 6, nome: "Batata Inglesa (cozida)", kcal100g: 52 },
+  { id: 7, nome: "Mandioca / Aipim (cozido)", kcal100g: 125 },
+  { id: 8, nome: "Macarrão de Trigo (cozido)", kcal100g: 131 },
+  { id: 9, nome: "Aveia em Flocos", kcal100g: 394 },
+  { id: 10, nome: "Tapioca (goma hidratada)", kcal100g: 240 },
+  { id: 11, nome: "Pão Francês", kcal100g: 300 },
+  { id: 12, nome: "Pão de Forma Integral", kcal100g: 250 },
+  { id: 13, nome: "Cuscuz de Milho (cozido)", kcal100g: 112 },
+  { id: 14, nome: "Peito de Frango (grelhado)", kcal100g: 165 },
+  { id: 15, nome: "Patinho Moído (refogado)", kcal100g: 133 },
+  { id: 16, nome: "Coxão Mole (grelhado)", kcal100g: 219 },
+  { id: 17, nome: "Filé de Tilápia / Salmão", kcal100g: 200 },
+  { id: 18, nome: "Atum em lata (água)", kcal100g: 116 },
+  { id: 19, nome: "Ovo de Galinha Cozido", kcal100g: 155 },
+  { id: 20, nome: "Ovo Mexido (com fio de óleo)", kcal100g: 190 },
+  { id: 21, nome: "Leite Integral (líquido)", kcal100g: 62 },
+  { id: 22, nome: "Leite Desnatado (líquido)", kcal100g: 35 },
+  { id: 23, nome: "Iogurte Natural Integral", kcal100g: 60 },
+  { id: 24, nome: "Iogurte Whey / Proteína", kcal100g: 70 },
+  { id: 25, nome: "Queijo Mussarela", kcal100g: 300 },
+  { id: 26, nome: "Queijo Minas Frescal", kcal100g: 240 },
+  { id: 27, nome: "Requeijão Tradicional", kcal100g: 260 },
+  { id: 28, nome: "Whey Protein Concentrado (Pó)", kcal100g: 400 },
+  { id: 29, nome: "Creatina", kcal100g: 0 },
+  { id: 30, nome: "Banana Prata", kcal100g: 98 },
+  { id: 31, nome: "Banana Nanica", kcal100g: 92 },
+  { id: 32, nome: "Maçã (Fuji/Gala)", kcal100g: 52 },
+  { id: 33, nome: "Mamão Papaya", kcal100g: 43 },
+  { id: 34, nome: "Morango", kcal100g: 32 },
+  { id: 35, nome: "Uva", kcal100g: 69 },
+  { id: 36, nome: "Melancia", kcal100g: 30 },
+  { id: 37, nome: "Laranja", kcal100g: 47 },
+  { id: 38, nome: "Abacate", kcal100g: 160 },
+  { id: 39, nome: "Alface", kcal100g: 15 },
+  { id: 40, nome: "Tomate", kcal100g: 18 },
+  { id: 41, nome: "Cenoura (cozida)", kcal100g: 41 },
+  { id: 42, nome: "Brócolis (cozido)", kcal100g: 35 },
+  { id: 43, nome: "Cebola", kcal100g: 40 },
+  { id: 44, nome: "Abobrinha (cozida)", kcal100g: 17 },
+  { id: 45, nome: "Azeite de Oliva Extra Virgem", kcal100g: 884 },
+  { id: 46, nome: "Manteiga com Sal", kcal100g: 717 },
+  { id: 47, nome: "Pasta de Amendoim (Integral)", kcal100g: 588 },
+  { id: 48, nome: "Castanha de Caju", kcal100g: 553 },
+  { id: 49, nome: "Castanha do Pará", kcal100g: 580 },
+  { id: 50, nome: "Amêndoas", kcal100g: 579 },
+  { id: 51, nome: "Chocolate Amargo (70%)", kcal100g: 540 }
 ];
 
+// ==========================================
+// 🔒 COMPONENTE DE LOGIN (GUARDIÃO)
+// ==========================================
+const TelaLogin = () => {
+  const [email, setEmail] = useState('');
+  const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
+
+  const fazerLogin = async (e) => {
+    e.preventDefault();
+    setCarregando(true); setErro('');
+    try {
+      await signInWithEmailAndPassword(auth, email, senha);
+    } catch (error) {
+      setErro('Acesso negado. E-mail ou senha incorretos.');
+    } finally {
+      setCarregando(false);
+    }
+  };
+
+  return (
+    <div className="flex h-screen w-full items-center justify-center bg-[#F9F6F0] p-4">
+      <div className="bg-white p-8 md:p-12 rounded-3xl shadow-xl w-full max-w-md border border-gray-100">
+        <div className="flex justify-center mb-6 text-[#3B4D43]"><IconLeaf /></div>
+        <h1 className="text-2xl font-bold text-center text-gray-900 mb-2">Acesso Restrito</h1>
+        <p className="text-sm text-center text-gray-500 mb-8">Painel exclusivo para a Nutricionista.</p>
+        
+        {erro && <div className="bg-red-50 text-red-600 p-3 rounded-xl text-sm mb-6 text-center font-bold">{erro}</div>}
+
+        <form onSubmit={fazerLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">E-mail Profissional</label>
+            <input type="email" value={email} onChange={(e)=>setEmail(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
+          </div>
+          <div>
+            <label className="block text-xs font-bold text-gray-400 uppercase mb-2">Senha</label>
+            <input type="password" value={senha} onChange={(e)=>setSenha(e.target.value)} required className="w-full bg-gray-50 border border-gray-200 rounded-xl p-3 focus:outline-[#3B4D43]" />
+          </div>
+          <button type="submit" disabled={carregando} className="w-full bg-[#3B4D43] text-white font-bold py-3.5 rounded-xl hover:bg-[#2C3E35] transition mt-4">
+            {carregando ? 'Verificando...' : 'Entrar no Painel'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+// ==========================================
+// 🚀 COMPONENTE PRINCIPAL
+// ==========================================
 export default function App() {
+  const [usuarioNutri, setUsuarioNutri] = useState(null);
+  const [verificandoAuth, setVerificandoAuth] = useState(true);
+
   const [abaAtiva, setAbaAtiva] = useState('dashboard'); 
   const [subAbaPaciente, setSubAbaPaciente] = useState('resumo'); 
   const [menuMobileAberto, setMenuMobileAberto] = useState(false);
@@ -73,16 +156,18 @@ export default function App() {
   const [planoAlmoco, setPlanoAlmoco] = useState("");
   const [planoLanche, setPlanoLanche] = useState("");
   const [planoJantar, setPlanoJantar] = useState("");
+  
   const [dataConsulta, setDataConsulta] = useState("");
   const [linkConsulta, setLinkConsulta] = useState("");
 
   const [novoModeloNome, setNovoModeloNome] = useState("");
   const [novoPostTexto, setNovoPostTexto] = useState("");
+  
   const [pacienteChatSelecionado, setPacienteChatSelecionado] = useState(null);
   const [mensagensChat, setMensagensChat] = useState([]);
   const [novaMensagemTexto, setNovaMensagemTexto] = useState("");
 
-  // 🍎 ESTADOS DA CALCULADORA HÍBRIDA (LOCAL + API)
+  // 🍎 ESTADOS DA CALCULADORA DE ALIMENTOS
   const [buscaAlimento, setBuscaAlimento] = useState("");
   const [resultadosBusca, setResultadosBusca] = useState([]);
   const [buscandoAPI, setBuscandoAPI] = useState(false);
@@ -91,7 +176,19 @@ export default function App() {
 
   const dataHoje = new Date().toISOString().split('T')[0];
 
+  // 🚀 ESCUTA AUTENTICAÇÃO
   useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUsuarioNutri(user);
+      setVerificandoAuth(false);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // 🔄 CARREGAMENTO INICIAL
+  useEffect(() => {
+    if (!usuarioNutri) return; // Só carrega os dados se estiver logado
+    
     const unsubPacientes = onSnapshot(collection(db, 'usuarios'), (snapshot) => {
       setPacientes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
       setCarregando(false);
@@ -103,10 +200,11 @@ export default function App() {
       setModelosDieta(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
     return () => { unsubPacientes(); unsubFeed(); unsubModelos(); };
-  }, []);
+  }, [usuarioNutri]);
 
   useEffect(() => {
     if (!pacienteSelecionado) return;
+
     if (pacienteSelecionado.plano_alimentar) {
       setPlanoCafe(pacienteSelecionado.plano_alimentar.cafe || "");
       setPlanoAlmoco(pacienteSelecionado.plano_alimentar.almoco || "");
@@ -115,6 +213,7 @@ export default function App() {
     } else {
       setPlanoCafe(""); setPlanoAlmoco(""); setPlanoLanche(""); setPlanoJantar("");
     }
+    
     setNotasInternas(pacienteSelecionado.notas_nutri || "");
     setDataConsulta(pacienteSelecionado.agenda?.data || "");
     setLinkConsulta(pacienteSelecionado.agenda?.link || "");
@@ -137,6 +236,7 @@ export default function App() {
     const unsubFotos = onSnapshot(doc(db, 'usuarios', pacienteSelecionado.id, 'galeria', 'fotos_atuais'), (snapshot) => {
       setFotosPaciente(snapshot.exists() ? snapshot.data() : {});
     });
+
     return () => { unsubDiario(); unsubPesos(); unsubFotos(); };
   }, [pacienteSelecionado]);
 
@@ -158,12 +258,10 @@ export default function App() {
       return;
     }
 
-    // 1. Busca Local Rápida (Sempre mostra primeiro)
     const termo = buscaAlimento.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    const local = BANCO_LOCAL.filter(a => a.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo));
+    const local = BANCO_ALIMENTOS.filter(a => a.nome.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").includes(termo));
     setResultadosBusca(local);
 
-    // 2. Busca na API Mundial (Debounce para não travar o servidor)
     setBuscandoAPI(true);
     const timeoutId = setTimeout(async () => {
       try {
@@ -178,7 +276,6 @@ export default function App() {
               kcal100g: Math.round(p.nutriments['energy-kcal_100g'])
             }));
           
-          // Junta a lista local com a lista mundial sem repetir nomes idênticos
           setResultadosBusca(prev => {
             const combinada = [...prev, ...apiMapeada];
             const unicos = combinada.filter((v, i, a) => a.findIndex(t => (t.nome === v.nome)) === i);
@@ -187,12 +284,16 @@ export default function App() {
         }
       } catch (e) { console.error("Erro na API Mundial:", e); }
       finally { setBuscandoAPI(false); }
-    }, 800); // 800ms de delay para não sobrecarregar
+    }, 800);
 
     return () => clearTimeout(timeoutId);
   }, [buscaAlimento]);
 
-  const trocarAba = (aba) => { setAbaAtiva(aba); setMenuMobileAberto(false); if(aba !== 'pacientes') setPacienteSelecionado(null); };
+  const trocarAba = (aba) => {
+    setAbaAtiva(aba);
+    setMenuMobileAberto(false);
+    if(aba !== 'pacientes') setPacienteSelecionado(null);
+  };
 
   const excluirPaciente = async (id) => {
     if(window.confirm("ALERTA: Tem certeza que deseja excluir este paciente?")) {
@@ -213,7 +314,7 @@ export default function App() {
   const salvarNotasEAgenda = async () => {
     try {
       await updateDoc(doc(db, 'usuarios', pacienteSelecionado.id), { notas_nutri: notasInternas, agenda: { data: dataConsulta, link: linkConsulta } });
-      alert("✅ Dados salvos!");
+      alert("✅ Dados internos e agenda salvos!");
     } catch(e) { alert("Erro ao salvar."); }
   };
 
@@ -224,6 +325,10 @@ export default function App() {
       await addDoc(collection(db, 'modelos_dieta'), { nome: novoModeloNome, cafe: planoCafe, almoco: planoAlmoco, lanche: planoLanche, jantar: planoJantar, timestamp: serverTimestamp() });
       setNovoModeloNome(""); alert("✅ Template salvo!");
     } catch (e) { alert("Erro ao salvar."); }
+  };
+
+  const excluirModelo = async (id) => {
+    if(window.confirm("Apagar este modelo de dieta?")) { await deleteDoc(doc(db, 'modelos_dieta', id)); }
   };
 
   const aplicarModelo = (modeloId) => {
@@ -237,6 +342,10 @@ export default function App() {
     if (novoPostTexto.trim() === "") return;
     await addDoc(collection(db, 'feed'), { autor: "Nutricionista Oficial", texto: novoPostTexto.trim(), curtidas: [], timestamp: serverTimestamp() });
     setNovoPostTexto("");
+  };
+
+  const excluirPost = async (id) => {
+    if(window.confirm("Apagar esta publicação do Feed?")) { await deleteDoc(doc(db, 'feed', id)); }
   };
 
   const enviarMensagemChat = async (e) => {
@@ -274,6 +383,11 @@ export default function App() {
     }).join(' ');
   };
 
+  // 🚀 GUARDIÕES DE TELA
+  if (verificandoAuth) return <div className="h-screen w-full bg-[#F9F6F0]"></div>;
+  if (!usuarioNutri) return <TelaLogin />;
+
+  // 🚀 RENDERIZAÇÃO DO PAINEL
   return (
     <div className="flex h-screen overflow-hidden bg-[#F9F6F0] font-sans text-gray-800 relative">
       <style>{`
@@ -303,7 +417,13 @@ export default function App() {
             ))}
           </nav>
         </div>
-        <div className="border-t border-white/10 pt-6 text-xs text-white/40 flex justify-between items-center"><span>v6.0 API Global</span><span>Admin</span></div>
+        <div className="border-t border-white/10 pt-6 flex flex-col gap-4">
+          <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 rounded-xl font-bold text-red-400 hover:bg-red-500/10 transition-all duration-200 text-left">
+            <IconLogOut />
+            <span className="text-sm">Sair da Conta</span>
+          </button>
+          <div className="text-xs text-white/40 flex justify-between items-center px-2"><span>v6.0 API Global</span><span>Admin</span></div>
+        </div>
       </aside>
 
       <div className="flex-1 flex flex-col h-screen overflow-hidden w-full relative">
@@ -383,7 +503,6 @@ export default function App() {
                 </div>
               )}
 
-              {/* 🚀 SUB-ABA METAS REFORMULADA: CALCULADORA GLOBAL DE ALIMENTOS */}
               {subAbaPaciente === 'metas' && (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                   <form onSubmit={salvarPlanoEMetas} className="lg:col-span-2 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
@@ -401,49 +520,20 @@ export default function App() {
                   <div className="lg:col-span-1 bg-white p-6 rounded-2xl border border-gray-100 shadow-sm h-fit no-print sticky top-4">
                     <h3 className="font-bold text-gray-900 mb-4 text-sm uppercase tracking-wider flex items-center gap-2"><IconSearch /> Assistente de Prescrição</h3>
                     <p className="text-xs text-gray-500 mb-4 leading-relaxed">Busque mundialmente. Se não achar, aguarde 1 seg que buscamos na nuvem.</p>
-                    
-                    <div className="relative">
-                      <input type="text" placeholder="Buscar alimento (Ex: Aveia)..." value={buscaAlimento} onChange={(e) => setBuscaAlimento(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-emerald-500 mb-2" />
-                      {buscandoAPI && <div className="absolute right-3 top-3 text-emerald-500"><IconLoader /></div>}
-                    </div>
-
-                    {/* Resultados da Busca */}
+                    <div className="relative"><input type="text" placeholder="Buscar alimento (Ex: Aveia)..." value={buscaAlimento} onChange={(e) => setBuscaAlimento(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-emerald-500 mb-2" />{buscandoAPI && <div className="absolute right-3 top-3 text-emerald-500"><IconLoader /></div>}</div>
                     {buscaAlimento && !alimentoSelecionadoCalc && (
                       <div className="bg-white border border-gray-100 rounded-xl shadow-lg max-h-48 overflow-y-auto absolute w-[calc(100%-3rem)] z-10">
-                        {resultadosBusca.length === 0 && !buscandoAPI ? <p className="text-xs text-gray-400 p-3">Nenhum resultado encontrado.</p> : 
-                          resultadosBusca.map((a, i) => (
-                            <button key={i} type="button" onClick={() => setAlimentoSelecionadoCalc(a)} className="w-full text-left p-3 hover:bg-emerald-50 border-b border-gray-50 last:border-0 transition">
-                              <p className="text-xs font-bold text-gray-800 line-clamp-1">{a.nome}</p>
-                              <p className="text-[10px] text-gray-400">{a.kcal100g} kcal / 100g</p>
-                            </button>
-                          ))
-                        }
+                        {resultadosBusca.length === 0 && !buscandoAPI ? <p className="text-xs text-gray-400 p-3">Nenhum resultado encontrado.</p> : resultadosBusca.map((a, i) => (<button key={i} type="button" onClick={() => setAlimentoSelecionadoCalc(a)} className="w-full text-left p-3 hover:bg-emerald-50 border-b border-gray-50 last:border-0 transition"><p className="text-xs font-bold text-gray-800 line-clamp-1">{a.nome}</p><p className="text-[10px] text-gray-400">{a.kcal100g} kcal / 100g</p></button>))}
                       </div>
                     )}
-
-                    {/* Painel da Porção (Após Selecionar) */}
                     {alimentoSelecionadoCalc && (
                       <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-4 mt-4 relative">
                         <button type="button" onClick={() => {setAlimentoSelecionadoCalc(null); setBuscaAlimento("");}} className="absolute top-2 right-2 text-gray-400 hover:text-gray-700"><IconX /></button>
                         <p className="text-xs font-bold text-emerald-900 mb-3 pr-6 leading-tight">{alimentoSelecionadoCalc.nome}</p>
-                        
-                        <div className="flex items-center gap-3 mb-4">
-                          <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Quantidade (g/ml)</label>
-                            <input type="number" value={quantidadeCalc} onChange={(e) => setQuantidadeCalc(e.target.value)} className="w-full bg-white border border-emerald-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:outline-emerald-500" />
-                          </div>
-                          <div className="flex-1">
-                            <label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Calorias</label>
-                            <div className="w-full bg-emerald-100 rounded-lg p-2 text-sm font-bold text-emerald-800 text-center">{calcularKcalAtual()} kcal</div>
-                          </div>
-                        </div>
-
+                        <div className="flex items-center gap-3 mb-4"><div className="flex-1"><label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Quantidade (g/ml)</label><input type="number" value={quantidadeCalc} onChange={(e) => setQuantidadeCalc(e.target.value)} className="w-full bg-white border border-emerald-200 rounded-lg p-2 text-sm font-bold text-gray-800 focus:outline-emerald-500" /></div><div className="flex-1"><label className="block text-[10px] font-bold text-emerald-700 uppercase mb-1">Calorias</label><div className="w-full bg-emerald-100 rounded-lg p-2 text-sm font-bold text-emerald-800 text-center">{calcularKcalAtual()} kcal</div></div></div>
                         <p className="text-[10px] font-bold text-gray-500 uppercase mb-2 text-center">Injetar refeição no:</p>
                         <div className="grid grid-cols-2 gap-2">
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Café', setPlanoCafe, planoCafe)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Café</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Almoço', setPlanoAlmoco, planoAlmoco)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Almoço</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Lanche', setPlanoLanche, planoLanche)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Lanche</button>
-                          <button type="button" onClick={() => injetarAlimentoNoTurno('Jantar', setPlanoJantar, planoJantar)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Jantar</button>
+                          <button type="button" onClick={() => injetarAlimentoNoTurno('Café', setPlanoCafe, planoCafe)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Café</button><button type="button" onClick={() => injetarAlimentoNoTurno('Almoço', setPlanoAlmoco, planoAlmoco)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Almoço</button><button type="button" onClick={() => injetarAlimentoNoTurno('Lanche', setPlanoLanche, planoLanche)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Lanche</button><button type="button" onClick={() => injetarAlimentoNoTurno('Jantar', setPlanoJantar, planoJantar)} className="bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 text-[10px] font-bold py-2 rounded-lg transition">+ Jantar</button>
                         </div>
                       </div>
                     )}
