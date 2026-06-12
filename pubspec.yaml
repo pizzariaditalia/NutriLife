@@ -25,7 +25,7 @@ dev_dependencies:
     sdk: flutter
   flutter_launcher_icons: ^0.13.1  # 🚀 Gerador Automático de Ícones Oficial
 
-# 🎨 Configuração da Logo Oficial do Nutri Life
+# 🎨 Configuração da Logo Oficial do Nutri Life para o Ícone do Telemóvel
 flutter_launcher_icons:
   android: true
   ios: false
@@ -33,3 +33,5 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  assets:
+    - image/icon.png  # 🚀 Ativa o suporte para ler a imagem nas telas
