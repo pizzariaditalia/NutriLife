@@ -33,7 +33,6 @@ jobs:
           rm -rf temp_app
           echo "flutter.minSdkVersion=26" >> android/local.properties
           
-          # A MÁGICA SEGURA: Identifica a linguagem correta e injeta a sintaxe exata!
           if [ -f "android/app/build.gradle.kts" ]; then
             echo 'android { compileOptions { isCoreLibraryDesugaringEnabled = true } }' >> android/app/build.gradle.kts
             echo 'dependencies { "coreLibraryDesugaring"("com.android.tools:desugar_jdk_libs:2.0.3") }' >> android/app/build.gradle.kts
@@ -49,19 +48,10 @@ jobs:
           # Altera o nome do aplicativo para "Nutri Life"
           sed -i 's/android:label="nutri_life"/android:label="Nutri Life"/g' $MANIFEST
           
-          # Adiciona as permissões de Câmera, Notificações e Alarmes Exatos
-          echo '<uses-permission android:name="android.permission.INTERNET"/>' > perms.txt
-          echo '<uses-permission android:name="android.permission.CAMERA"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.VIBRATE"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.WAKE_LOCK"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.USE_EXACT_ALARM"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>' >> perms.txt
-          echo '<uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>' >> perms.txt
+          # MÁGICA CORRIGIDA: Injeta as permissões ANTES da tag <application> para não quebrar o XML
+          PERMS='<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application'
           
-          # Injeta tudo no arquivo do Android
-          sed -i -e '/<application/r perms.txt' $MANIFEST
-          rm perms.txt
+          sed -i "s/<application/$PERMS/g" $MANIFEST
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
