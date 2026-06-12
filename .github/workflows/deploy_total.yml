@@ -1,0 +1,87 @@
+name: Publicar Ecossistema Nutri Life (PWA + ADM)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar Código do Repositório
+        uses: actions/checkout@v4
+
+      # 🟢 ETAPA 1: CONFIGURAR AMBIENTES
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+          cache: 'npm'
+          cache-dependency-path: painel_nutri/package.json
+
+      - name: Configurar ambiente Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # 🔵 ETAPA 2: COMPILAR APP DO PACIENTE (FLUTTER PWA)
+      - name: Gerar Motor Web do Flutter
+        run: flutter create --platforms web .
+
+      - name: Instalar dependências do Flutter
+        run: flutter pub get
+
+      - name: Compilar App do Paciente (Raiz)
+        # Injetamos a rota do repositório direto no comando do Flutter
+        run: flutter build web --release --pwa-strategy=offline-first --base-href="/NutriLife/"
+
+      # 🟡 ETAPA 3: COMPILAR PAINEL DA NUTRI (REACT)
+      - name: Instalar dependências e compilar Painel ADM
+        run: |
+          cd painel_nutri
+          npm install
+          npm run build
+          cd ..
+
+      # 🟠 ETAPA 4: UNIFICAR AS PASTAS NO FORMATO SOLICITADO
+      - name: Organizar Estrutura do Site Total
+        run: |
+          # Cria a pasta temporária que será o site final
+          mkdir -p estrutura_site
+          
+          # 1. Coloca o App do Paciente primeiro (na Raiz)
+          cp -r build/web/* estrutura_site/
+          
+          # 2. Cria a pasta nutri-adm depois
+          mkdir -p estrutura_site/nutri-adm
+          
+          # 3. Joga o painel React dentro da pasta nutri-adm
+          cp -r painel_nutri/dist/* estrutura_site/nutri-adm/
+
+      # 🚀 ETAPA 5: PUBLICAR NO GITHUB PAGES
+      - name: Configurar Pages
+        uses: actions/configure-pages@v4
+
+      - name: Subir artefato unificado
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'estrutura_site'
+
+      - name: Publicar no GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
