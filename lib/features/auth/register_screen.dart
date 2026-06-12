@@ -40,7 +40,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _carregando = true);
 
     try {
-      // 1. Cria a credencial de segurança no Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
         email: _emailCtrl.text.trim(),
         password: _senhaCtrl.text.trim(),
@@ -48,12 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
       String uid = userCredential.user!.uid;
 
-      // 2. Converte as entradas de texto em números válidos para cálculo
       double peso = double.tryParse(_pesoCtrl.text.replaceAll(',', '.')) ?? 70.0;
       double altura = double.tryParse(_alturaCtrl.text.replaceAll(',', '.')) ?? 1.70;
       int idade = int.tryParse(_idadeCtrl.text) ?? 25;
 
-      // 3. Grava o documento mestre do usuário no Firestore sincronizado
       await FirebaseFirestore.instance.collection('usuarios').doc(uid).set({
         'nome': _nomeCtrl.text.trim(),
         'email': _emailCtrl.text.trim(),
@@ -67,7 +64,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       });
 
-      // 4. Salva a sessão ativa local
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('usuario_logado', true);
 
@@ -97,6 +93,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // 🚀 LOGO OFICIAL ADICIONADA NO TOPO DO CADASTRO
+              Center(
+                child: Image.asset(
+                  'image/icon.png',
+                  height: 90,
+                  errorBuilder: (context, error, stackTrace) => const SizedBox(),
+                ),
+              ),
+              const SizedBox(height: 20),
               const Text('Monte o seu Perfil Clínico 🩺', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
               const SizedBox(height: 6),
               const Text('Essas informações calcularão suas calorias automaticamente.', style: TextStyle(color: Colors.grey, fontSize: 13)),
@@ -122,7 +127,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ],
               ),
 
-              // Dropdown estruturado para selecionar o foco
               Container(
                 margin: const EdgeInsets.only(bottom: 20),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
