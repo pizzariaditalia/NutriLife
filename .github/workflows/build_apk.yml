@@ -48,10 +48,10 @@ jobs:
           # Altera o nome do aplicativo para "Nutri Life"
           sed -i 's/android:label="nutri_life"/android:label="Nutri Life"/g' $MANIFEST
           
-          # MÁGICA CORRIGIDA: Injeta as permissões ANTES da tag <application> para não quebrar o XML
-          PERMS='<uses-permission android:name="android.permission.INTERNET"/>\n    <uses-permission android:name="android.permission.CAMERA"/>\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>\n    <uses-permission android:name="android.permission.VIBRATE"/>\n    <uses-permission android:name="android.permission.WAKE_LOCK"/>\n    <uses-permission android:name="android.permission.USE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/>\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>\n    <application'
+          # MÁGICA BLINDADA: Usa | como separador e tudo em uma linha
+          PERMS='<uses-permission android:name="android.permission.INTERNET"/><uses-permission android:name="android.permission.CAMERA"/><uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/><uses-permission android:name="android.permission.VIBRATE"/><uses-permission android:name="android.permission.WAKE_LOCK"/><uses-permission android:name="android.permission.USE_EXACT_ALARM"/><uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM"/><uses-permission android:name="android.permission.POST_NOTIFICATIONS"/><application'
           
-          sed -i "s/<application/$PERMS/g" $MANIFEST
+          sed -i "s|<application|$PERMS|g" $MANIFEST
 
       - name: Instalar dependências (pub get)
         run: flutter pub get
