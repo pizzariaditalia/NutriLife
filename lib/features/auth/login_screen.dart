@@ -3,7 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/theme/app_colors.dart';
 import '../patient_hub/main_navigation_screen.dart';
-import 'register_screen.dart'; // 🚀 NOVO IMPORT
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -73,7 +73,14 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.eco, size: 72, color: AppColors.primarySage),
+                // 🚀 LOGO OFICIAL NUTRI LIFE INJECTADA
+                Image.asset(
+                  'image/icon.png',
+                  height: 120,
+                  errorBuilder: (context, error, stackTrace) {
+                    return const Icon(Icons.eco, size: 72, color: AppColors.primarySage);
+                  },
+                ),
                 const SizedBox(height: 12),
                 const Text(
                   'Nutri Life',
@@ -141,7 +148,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 16),
                         TextButton(
-                          // 🚀 REDIRECIONAMENTO CORRETO: Abre o fluxo de onboarding completo
                           onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RegisterScreen())),
                           child: const Text('Criar Nova Conta', style: TextStyle(color: AppColors.primarySage, fontWeight: FontWeight.bold, fontSize: 14)),
                         )
