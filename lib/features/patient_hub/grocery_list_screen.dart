@@ -12,12 +12,13 @@ class GroceryListScreen extends StatefulWidget {
 
 class _GroceryListScreenState extends State<GroceryListScreen> {
   final String _userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
+  final TextEditingController _novoItemCtrl = TextEditingController();
   
   // Lista local para guardar o que já foi colocado no carrinho
   final Set<String> _itensNoCarrinho = {};
 
   // Função mágica que pega os textos da dieta e transforma numa lista limpa
-  List<String> _gerarListaDeCompras(Map<String, dynamic>? plano) {
+  List<String> _gerarListaDeComprasDaDieta(Map<String, dynamic>? plano) {
     if (plano == null) return [];
     
     String textoCompleto = "";
@@ -26,14 +27,12 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
     if (plano['lanche'] != null) textoCompleto += "${plano['lanche']}\n";
     if (plano['jantar'] != null) textoCompleto += "${plano['jantar']}\n";
 
-    // Quebra o texto por linhas e remove linhas vazias ou textos inúteis
     List<String> linhas = textoCompleto.split('\n');
     List<String> itensLimpos = [];
 
     for (String linha in linhas) {
       String item = linha.replaceAll('•', '').trim();
       if (item.isNotEmpty && item.length > 3) {
-        // Evita itens duplicados na lista do mercado
         if (!itensLimpos.contains(item)) {
           itensLimpos.add(item);
         }
@@ -50,6 +49,29 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
         _itensNoCarrinho.add(item);
       }
     });
+  }
+
+  // 🚀 PONTO 4: Salva item customizado no banco do paciente
+  void _adicionarItemPessoal() async {
+    if (_novoItemCtrl.text.trim().isEmpty) return;
+    String novoItem = "🛒 " + _novoItemCtrl.text.trim(); // Emoji para diferenciar
+    _novoItemCtrl.clear();
+    FocusScope.of(context).unfocus();
+
+    await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
+      'itens_mercado_extras': FieldValue.arrayUnion([novoItem])
+    }, SetOptions(merge: true));
+  }
+
+  // 🚀 PONTO 4: Apaga item customizado
+  void _removerItemPessoal(String item) async {
+    await FirebaseFirestore.instance.collection('usuarios').doc(_userId).set({
+      'itens_mercado_extras': FieldValue.arrayRemove([item])
+    }, SetOptions(merge: true));
+    
+    if (_itensNoCarrinho.contains(item)) {
+      setState(() => _itensNoCarrinho.remove(item));
+    }
   }
 
   @override
@@ -71,25 +93,14 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
           final dadosUser = snapshot.data!.data() as Map<String, dynamic>?;
           final planoAlimentar = dadosUser?['plano_alimentar'] as Map<String, dynamic>?;
           
-          List<String> listaDoMercado = _gerarListaDeCompras(planoAlimentar);
-
-          if (listaDoMercado.isEmpty) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(32.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.shopping_basket_outlined, size: 80, color: Colors.grey.shade300),
-                    const SizedBox(height: 16),
-                    Text('Sua lista está vazia!', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.grey.shade700)),
-                    const SizedBox(height: 8),
-                    Text('Aguarde sua nutricionista enviar o plano alimentar. Nós vamos gerar sua lista de compras automaticamente aqui.', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)),
-                  ],
-                ),
-              ),
-            );
-          }
+          // Pega os itens salvos manualmente pelo paciente
+          final List<dynamic> itensExtras = dadosUser?['itens_mercado_extras'] ?? [];
+          
+          // Junta a dieta da Nutri com os itens extras do paciente
+          List<String> listaDoMercado = [
+            ..._gerarListaDeComprasDaDieta(planoAlimentar),
+            ...itensExtras.map((e) => e.toString()),
+          ];
 
           int itensPendentes = listaDoMercado.length - _itensNoCarrinho.length;
 
@@ -105,12 +116,14 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                 ),
                 child: Column(
                   children: [
-                    const Icon(Icons.auto_awesome, color: Colors.white70, size: 24),
+                    const Icon(Icons.shopping_cart_checkout, color: Colors.white70, size: 28),
                     const SizedBox(height: 8),
-                    const Text('Gerada pela sua Dieta', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text('Sua Lista Inteligente', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 4),
                     Text(
-                      itensPendentes == 0 ? 'Tudo no carrinho! 🎉' : 'Faltam $itensPendentes itens para comprar', 
+                      listaDoMercado.isEmpty 
+                        ? 'Adicione itens abaixo!' 
+                        : (itensPendentes == 0 ? 'Tudo no carrinho! 🎉' : 'Faltam $itensPendentes itens para comprar'), 
                       style: const TextStyle(color: Colors.white70, fontSize: 14)
                     ),
                     const SizedBox(height: 16),
@@ -125,45 +138,96 @@ class _GroceryListScreenState extends State<GroceryListScreen> {
                 ),
               ),
 
+              // 🚀 PONTO 4: BARRA DE ADICIONAR ITEM EXTRA
+              Container(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _novoItemCtrl,
+                        decoration: InputDecoration(
+                          hintText: 'Adicionar item extra...',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                        ),
+                        onSubmitted: (_) => _adicionarItemPessoal(),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    FloatingActionButton(
+                      onPressed: _adicionarItemPessoal,
+                      backgroundColor: AppColors.secondaryMenta,
+                      elevation: 0,
+                      mini: true,
+                      child: const Icon(Icons.add, color: Colors.white),
+                    )
+                  ],
+                ),
+              ),
+
               // LISTA DO SUPERMERCADO
               Expanded(
-                child: ListView.builder(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: listaDoMercado.length,
-                  itemBuilder: (context, index) {
-                    final item = listaDoMercado[index];
-                    final noCarrinho = _itensNoCarrinho.contains(item);
+                child: listaDoMercado.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.shopping_basket_outlined, size: 64, color: Colors.grey.shade300),
+                            const SizedBox(height: 16),
+                            Text('Lista vazia', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey.shade500)),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: listaDoMercado.length,
+                      itemBuilder: (context, index) {
+                        final item = listaDoMercado[index];
+                        final noCarrinho = _itensNoCarrinho.contains(item);
+                        final isItemPessoal = item.startsWith('🛒');
 
-                    return AnimatedContainer(
-                      duration: const Duration(milliseconds: 300),
-                      margin: const EdgeInsets.only(bottom: 12),
-                      decoration: BoxDecoration(
-                        color: noCarrinho ? Colors.grey.shade100 : Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: noCarrinho ? Colors.grey.shade200 : Colors.grey.shade300),
-                      ),
-                      child: CheckboxListTile(
-                        value: noCarrinho,
-                        onChanged: (bool? value) => _alternarCarrinho(item),
-                        activeColor: AppColors.primarySage,
-                        checkColor: Colors.white,
-                        title: Text(
-                          item,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: noCarrinho ? FontWeight.normal : FontWeight.bold,
-                            color: noCarrinho ? Colors.grey.shade500 : AppColors.textDark,
-                            decoration: noCarrinho ? TextDecoration.lineThrough : TextDecoration.none,
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 300),
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            color: noCarrinho ? Colors.grey.shade100 : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: noCarrinho ? Colors.grey.shade200 : Colors.grey.shade300),
                           ),
-                        ),
-                        secondary: Icon(
-                          noCarrinho ? Icons.check_circle : Icons.circle_outlined,
-                          color: noCarrinho ? AppColors.primarySage : Colors.grey.shade400,
-                        ),
-                      ),
-                    );
-                  },
-                ),
+                          child: CheckboxListTile(
+                            value: noCarrinho,
+                            onChanged: (bool? value) => _alternarCarrinho(item),
+                            activeColor: AppColors.primarySage,
+                            checkColor: Colors.white,
+                            contentPadding: const EdgeInsets.only(left: 8, right: 0),
+                            title: Text(
+                              item,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: noCarrinho ? FontWeight.normal : FontWeight.bold,
+                                color: noCarrinho ? Colors.grey.shade500 : AppColors.textDark,
+                                decoration: noCarrinho ? TextDecoration.lineThrough : TextDecoration.none,
+                              ),
+                            ),
+                            secondary: isItemPessoal
+                                ? IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                    onPressed: () => _removerItemPessoal(item),
+                                  )
+                                : Icon(
+                                    noCarrinho ? Icons.check_circle : Icons.circle_outlined,
+                                    color: noCarrinho ? AppColors.primarySage : Colors.grey.shade400,
+                                  ),
+                          ),
+                        );
+                      },
+                    ),
               ),
             ],
           );
