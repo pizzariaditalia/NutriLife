@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nutri_life/core/theme/app_colors.dart';
+import 'package:nutri_life/features/food_database/barcode_scanner_screen.dart'; // 🚀 IMPORT DO SCANNER
 import 'dart:convert';
 import 'dart:async';
 import 'package:http/http.dart' as http;
@@ -22,7 +23,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   bool _buscandoAPI = false;
   Timer? _debounce;
 
-  // 🍎 BANCO DE DADOS LOCAL
   final List<Map<String, dynamic>> _bancoLocal = [
     {'nome': "Arroz Branco (cozido)", 'kcal100g': 130, 'medida_base': 'g/ml'},
     {'nome': "Arroz Integral (cozido)", 'kcal100g': 112, 'medida_base': 'g/ml'},
@@ -47,7 +47,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     super.dispose();
   }
 
-  // 🚀 O MOTOR DE BUSCA GLOBAL (Local + Comunidade Firestore + API)
   void _pesquisar(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
@@ -62,7 +61,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     _debounce = Timer(const Duration(milliseconds: 800), () async {
       String termoLimpo = _removerAcentos(query);
       
-      // 1. Filtra no Banco Local
       List<Map<String, dynamic>> resultadosLocais = _bancoLocal.where((alimento) {
         return _removerAcentos(alimento['nome']).contains(termoLimpo);
       }).toList();
@@ -72,7 +70,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
         _buscandoAPI = true;
       });
 
-      // 2. Busca na Comunidade (Firestore) - Alimentos inseridos por outros pacientes!
       try {
         final querySnap = await FirebaseFirestore.instance
             .collection('alimentos_comunidade')
@@ -93,7 +90,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
         debugPrint("Erro ao buscar na comunidade: $e");
       }
 
-      // 3. Busca na API Global (OpenFoodFacts)
       try {
         final url = Uri.parse('https://br.openfoodfacts.org/cgi/search.pl?search_terms=${Uri.encodeComponent(query)}&search_simple=1&action=process&json=1&page_size=15');
         final response = await http.get(url);
@@ -102,7 +98,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
           final data = json.decode(response.body);
           if (data['products'] != null) {
             List<Map<String, dynamic>> resultadosAPI = [];
-            
             for (var p in data['products']) {
               if (p['product_name'] != null && p['nutriments'] != null && p['nutriments']['energy-kcal_100g'] != null) {
                 double kcal = (p['nutriments']['energy-kcal_100g'] as num).toDouble();
@@ -114,10 +109,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                 });
               }
             }
-
             if (mounted) {
               setState(() {
-                // Junta tudo evitando duplicatas
                 List<Map<String, dynamic>> combinada = [...resultadosLocais, ...resultadosAPI];
                 var nomesVistos = <String>{};
                 _resultadosBusca = combinada.where((item) => nomesVistos.add(item['nome'])).toList();
@@ -141,7 +134,6 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
     return str.toLowerCase();
   }
 
-  // 📝 PONTO 3: MODAL PARA CADASTRAR ALIMENTO MANUALMENTE NA COMUNIDADE
   void _abrirModalCadastroManual() {
     final nomeCtrl = TextEditingController(text: _buscaController.text);
     final kcalCtrl = TextEditingController();
@@ -209,11 +201,10 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                       final novoItem = {
                         'nome': nomeCtrl.text.trim(),
                         'nome_busca': _removerAcentos(nomeCtrl.text.trim()),
-                        'kcal100g': kcal, // Nome interno mantido
+                        'kcal100g': kcal,
                         'medida_base': medidaBaseSelecionada == '100 g/ml' ? 'g/ml' : 'Unidade(s)',
                       };
 
-                      // Salva no banco global da comunidade!
                       await FirebaseFirestore.instance.collection('alimentos_comunidade').add({
                         ...novoItem,
                         'criado_por': _userId,
@@ -221,8 +212,8 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
                       });
 
                       if (mounted) {
-                        Navigator.pop(context); // Fecha cadastro
-                        _abrirModalQuantidade(novoItem); // Abre a calculadora já com ele pronto
+                        Navigator.pop(context);
+                        _abrirModalQuantidade(novoItem);
                         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Alimento partilhado com a comunidade! 🌟'), backgroundColor: AppColors.secondaryMenta));
                       }
                     },
@@ -242,11 +233,7 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => _CalculadoraPorcao(
-        alimento: alimento,
-        turno: widget.turno,
-        userId: _userId,
-      ),
+      builder: (context) => _CalculadoraPorcao(alimento: alimento, turno: widget.turno, userId: _userId),
     );
   }
 
@@ -261,46 +248,52 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
       ),
       body: Column(
         children: [
-          // BARRA DE PESQUISA
+          // 🚀 PONTO 2: BARRA DE PESQUISA COM BOTÃO DO SCANNER
           Container(
             padding: const EdgeInsets.all(20),
             decoration: const BoxDecoration(
               color: AppColors.primarySage,
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
             ),
-            child: TextField(
-              controller: _buscaController,
-              onChanged: _pesquisar,
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-              decoration: InputDecoration(
-                hintText: 'Ex: Batata Doce, Whey...',
-                hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
-                prefixIcon: const Icon(Icons.search, color: Colors.white),
-                suffixIcon: _buscandoAPI 
-                    ? Container(
-                        padding: const EdgeInsets.all(12),
-                        child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                      ) 
-                    : (_buscaController.text.isNotEmpty 
-                        ? IconButton(
-                            icon: const Icon(Icons.clear, color: Colors.white),
-                            onPressed: () {
-                              _buscaController.clear();
-                              _pesquisar("");
-                            },
-                          )
-                        : null),
-                filled: true,
-                fillColor: Colors.black.withOpacity(0.15),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _buscaController,
+                    onChanged: _pesquisar,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    decoration: InputDecoration(
+                      hintText: 'Buscar alimento...',
+                      hintStyle: TextStyle(color: Colors.white.withOpacity(0.6)),
+                      prefixIcon: const Icon(Icons.search, color: Colors.white),
+                      suffixIcon: _buscandoAPI 
+                          ? Container(padding: const EdgeInsets.all(12), child: const CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) 
+                          : (_buscaController.text.isNotEmpty 
+                              ? IconButton(icon: const Icon(Icons.clear, color: Colors.white), onPressed: () { _buscaController.clear(); _pesquisar(""); })
+                              : null),
+                      filled: true,
+                      fillColor: Colors.black.withOpacity(0.15),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: IconButton(
+                    icon: const Icon(Icons.qr_code_scanner, color: AppColors.primarySage),
+                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => BarcodeScannerScreen(turno: widget.turno))),
+                  ),
+                )
+              ],
             ),
           ),
           
-          // RESULTADOS DA BUSCA
           Expanded(
             child: _resultadosBusca.isEmpty && !_buscandoAPI && _buscaController.text.isNotEmpty
-                // 🚀 PONTO 3: TELA VAZIA CONVIDANDO A CRIAR O ALIMENTO
                 ? Center(
                     child: Padding(
                       padding: const EdgeInsets.all(32.0),
@@ -358,18 +351,12 @@ class _FoodSearchScreenState extends State<FoodSearchScreen> {
   }
 }
 
-// ==========================================
-// ⚖️ CALCULADORA EXATA COM OPÇÃO DE UNIDADES
-// ==========================================
 class _CalculadoraPorcao extends StatefulWidget {
   final Map<String, dynamic> alimento;
   final String turno;
   final String userId;
-  
   const _CalculadoraPorcao({Key? key, required this.alimento, required this.turno, required this.userId}) : super(key: key);
-
-  @override
-  State<_CalculadoraPorcao> createState() => _CalculadoraPorcaoState();
+  @override State<_CalculadoraPorcao> createState() => _CalculadoraPorcaoState();
 }
 
 class _CalculadoraPorcaoState extends State<_CalculadoraPorcao> {
@@ -377,41 +364,26 @@ class _CalculadoraPorcaoState extends State<_CalculadoraPorcao> {
   late String _medidaSelecionada;
   bool _salvando = false;
 
-  @override
-  void initState() {
+  @override void initState() {
     super.initState();
-    // 🚀 PONTO 2: Define o dropdown com base no que veio do banco
     _medidaSelecionada = widget.alimento['medida_base'] ?? 'g/ml';
-    if (_medidaSelecionada == 'g/ml') {
-      _qtdController.text = "100"; // Padrão 100g
-    } else {
-      _qtdController.text = "1";   // Padrão 1 Unidade
-    }
+    if (_medidaSelecionada == 'g/ml') { _qtdController.text = "100"; } else { _qtdController.text = "1"; }
   }
 
   int _calcularCalorias() {
     double qtd = double.tryParse(_qtdController.text.replaceAll(',', '.')) ?? 0;
     int baseKcal = widget.alimento['kcal100g'] ?? 0;
-    
-    // 🚀 PONTO 2: A Matemática muda dependendo do que o usuário escolher!
-    if (_medidaSelecionada == 'g/ml') {
-      return ((baseKcal / 100) * qtd).round();
-    } else {
-      return (baseKcal * qtd).round(); // Se for unidade, multiplica direto
-    }
+    if (_medidaSelecionada == 'g/ml') { return ((baseKcal / 100) * qtd).round(); } else { return (baseKcal * qtd).round(); }
   }
 
   void _salvarNoDiario() async {
     double qtd = double.tryParse(_qtdController.text.replaceAll(',', '.')) ?? 0;
     if (qtd <= 0) return;
-
     setState(() => _salvando = true);
-
     try {
       final agora = DateTime.now();
       String dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
       int caloriasTotais = _calcularCalorias();
-
       final novoAlimento = {
         'nome': widget.alimento['nome'],
         'quantidade': qtd,
@@ -420,124 +392,29 @@ class _CalculadoraPorcaoState extends State<_CalculadoraPorcao> {
         'turno': widget.turno,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
-
-      final docRef = FirebaseFirestore.instance.collection('usuarios').doc(widget.userId).collection('diario').doc(dataHoje);
-
-      await docRef.set({
-        'historico_alimentos': FieldValue.arrayUnion([novoAlimento]),
-        'calorias_consumidas': FieldValue.increment(caloriasTotais),
-      }, SetOptions(merge: true));
-
-      if (mounted) {
-        Navigator.pop(context); // Fecha o modal
-        Navigator.pop(context); // Fecha a tela de busca e volta pro diário
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ ${widget.alimento['nome']} adicionado!'), backgroundColor: AppColors.primarySage));
-      }
+      await FirebaseFirestore.instance.collection('usuarios').doc(widget.userId).collection('diario').doc(dataHoje).set({'historico_alimentos': FieldValue.arrayUnion([novoAlimento]), 'calorias_consumidas': FieldValue.increment(caloriasTotais)}, SetOptions(merge: true));
+      if (mounted) { Navigator.pop(context); Navigator.pop(context); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('✅ ${widget.alimento['nome']} adicionado!'), backgroundColor: AppColors.primarySage)); }
     } catch (e) {
-      if (mounted) {
-        setState(() => _salvando = false);
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao salvar alimento.'), backgroundColor: Colors.red));
-      }
+      if (mounted) { setState(() => _salvando = false); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Erro ao salvar alimento.'), backgroundColor: Colors.red)); }
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
+  @override Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24),
-      decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom, top: 24, left: 24, right: 24), decoration: const BoxDecoration(color: Colors.white, borderRadius: BorderRadius.vertical(top: Radius.circular(32))),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(widget.alimento['nome'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)),
-          const SizedBox(height: 4),
-          Text('Base cadastrada: ${widget.alimento['kcal100g']} kcal', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
-          const SizedBox(height: 24),
-          
+          Text(widget.alimento['nome'], style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textDark)), const SizedBox(height: 4), Text('Base cadastrada: ${widget.alimento['kcal100g']} kcal', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)), const SizedBox(height: 24),
           Row(
             children: [
-              Expanded(
-                flex: 2,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('QUANTIDADE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _qtdController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      onChanged: (val) => setState(() {}),
-                      decoration: InputDecoration(
-                        filled: true, fillColor: Colors.grey.shade50,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      ),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('MEDIDA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
-                    const SizedBox(height: 8),
-                    // 🚀 PONTO 2: SELETOR DE UNIDADE OU GRAMAS
-                    DropdownButtonFormField<String>(
-                      value: _medidaSelecionada,
-                      decoration: InputDecoration(
-                        filled: true, fillColor: Colors.grey.shade50,
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
-                      ),
-                      items: ['g/ml', 'Unidade(s)'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _medidaSelecionada = val!;
-                          if (_medidaSelecionada == 'g/ml') {
-                            _qtdController.text = "100";
-                          } else {
-                            _qtdController.text = "1";
-                          }
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('TOTAL DE CALORIAS:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(color: AppColors.primarySage.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Text(
-                  '${_calcularCalorias()} kcal', 
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primarySage),
-                ),
-              ),
-            ],
-          ),
-          
-          const SizedBox(height: 32),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _salvando ? null : _salvarNoDiario,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-              child: _salvando 
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : const Text('Adicionar ao Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-            ),
+              Expanded(flex: 2, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('QUANTIDADE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)), const SizedBox(height: 8), TextField(controller: _qtdController, keyboardType: const TextInputType.numberWithOptions(decimal: true), onChanged: (val) => setState(() {}), decoration: InputDecoration(filled: true, fillColor: Colors.grey.shade50, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18))])), const SizedBox(width: 12),
+              Expanded(flex: 3, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('MEDIDA', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)), const SizedBox(height: 8), DropdownButtonFormField<String>(value: _medidaSelecionada, decoration: InputDecoration(filled: true, fillColor: Colors.grey.shade50, border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none)), items: ['g/ml', 'Unidade(s)'].map((e) => DropdownMenuItem(value: e, child: Text(e, style: const TextStyle(fontWeight: FontWeight.bold)))).toList(), onChanged: (val) { setState(() { _medidaSelecionada = val!; if (_medidaSelecionada == 'g/ml') { _qtdController.text = "100"; } else { _qtdController.text = "1"; } }); })])),
+            ]
           ),
           const SizedBox(height: 24),
+          Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [const Text('TOTAL DE CALORIAS:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.grey)), Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), decoration: BoxDecoration(color: AppColors.primarySage.withOpacity(0.1), borderRadius: BorderRadius.circular(12)), child: Text('${_calcularCalorias()} kcal', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20, color: AppColors.primarySage)))]),
+          const SizedBox(height: 32), SizedBox(width: double.infinity, child: ElevatedButton(onPressed: _salvando ? null : _salvarNoDiario, style: ElevatedButton.styleFrom(backgroundColor: AppColors.primarySage, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: _salvando ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Adicionar ao Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))), const SizedBox(height: 24),
         ],
       ),
     );
