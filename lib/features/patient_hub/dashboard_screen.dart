@@ -27,10 +27,41 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
   }
 
-  void _adicionarAgua() async {
+  // 🚀 PONTO 1: Função atualizada para aceitar qualquer valor
+  void _adicionarAgua(int ml) async {
     final dataHoje = _getTodayDateKey();
-    await FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).set({'agua_consumida': FieldValue.increment(250)}, SetOptions(merge: true));
-    if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('💧 Ótimo! +250ml de pura hidratação. 🚀'), backgroundColor: Colors.blue));
+    await FirebaseFirestore.instance.collection('usuarios').doc(_userId).collection('diario').doc(dataHoje).set({'agua_consumida': FieldValue.increment(ml)}, SetOptions(merge: true));
+    if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('💧 Ótimo! +${ml}ml de pura hidratação. 🚀'), backgroundColor: Colors.blue));
+  }
+
+  // 🚀 PONTO 1: Modal para adicionar água manualmente
+  void _abrirDialogoAguaManual(BuildContext context) {
+    final txtController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Registrar Água Manualmente', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textDark)),
+        content: TextField(
+          controller: txtController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(hintText: 'Ex: 350', suffixText: 'ml'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar', style: TextStyle(color: Colors.grey))),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.blue),
+            onPressed: () {
+              int? qtdDigitada = int.tryParse(txtController.text.replaceAll(RegExp(r'[^0-9]'), ''));
+              if (qtdDigitada != null && qtdDigitada > 0) {
+                _adicionarAgua(qtdDigitada);
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Salvar', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   void _abrirDialogoRegistrarPeso(BuildContext context) {
@@ -67,15 +98,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
     if (curtidas.contains(_userId)) { await docRef.update({'curtidas': FieldValue.arrayRemove([_userId])}); } else { await docRef.update({'curtidas': FieldValue.arrayUnion([_userId])}); }
   }
 
+  // 🚀 PONTO 1: Card de Água com os dois botões
   Widget _construirRastreadorAgua(int consumido) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16), padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: Colors.blue.shade50, borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.blue.shade100)),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
         children: [
-          Row(children: [const Icon(Icons.water_drop, color: Colors.blue, size: 32), const SizedBox(width: 16), Column(crossAxisAlignment: CrossAxisAlignment.start, children: [const Text('Hidratação Diária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), Text('Você já bebeu $consumido ml hoje', style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500))])]),
-          ElevatedButton.icon(onPressed: _adicionarAgua, style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))), icon: const Icon(Icons.add, color: Colors.white, size: 16), label: const Text('+250ml', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)))
+          Row(
+            children: [
+              const Icon(Icons.water_drop, color: Colors.blue, size: 32), 
+              const SizedBox(width: 16), 
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start, 
+                children: [
+                  const Text('Hidratação Diária', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textDark)), 
+                  Text('Você já bebeu $consumido ml hoje', style: TextStyle(fontSize: 13, color: Colors.blue.shade700, fontWeight: FontWeight.w500))
+                ]
+              )
+            ]
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _adicionarAgua(1000), 
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, elevation: 0, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 12)), 
+                  icon: const Icon(Icons.add, color: Colors.white, size: 18), 
+                  label: const Text('1 Litro', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => _abrirDialogoAguaManual(context), 
+                  style: OutlinedButton.styleFrom(foregroundColor: Colors.blue, side: const BorderSide(color: Colors.blue), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), padding: const EdgeInsets.symmetric(vertical: 12)), 
+                  icon: const Icon(Icons.edit, size: 18), 
+                  label: const Text('Manual', style: TextStyle(fontWeight: FontWeight.bold))
+                ),
+              ),
+            ],
+          )
         ],
       ),
     );
@@ -127,14 +191,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
           appBar: AppBar(
             title: const Text('Meu Painel', style: TextStyle(color: Colors.white)), backgroundColor: AppColors.primarySage, elevation: 0,
             actions: [
-              // SINO DE NOTIFICAÇÃO DA CONSULTA
               Badge(
                 isLabelVisible: agendaConsulta != null, 
                 backgroundColor: Colors.redAccent,
                 child: IconButton(icon: const Icon(Icons.notifications_none_outlined, size: 26, color: Colors.white), onPressed: () => ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(agendaConsulta != null ? 'Sua nutricionista agendou uma consulta!' : 'Tudo lido!')))),
               ),
-              
-              // BOLINHA VERMELHA DO CHAT
               StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance.collection('chats').doc(_userId).collection('mensagens').orderBy('timestamp', descending: true).limit(1).snapshots(),
                 builder: (context, chatSnap) {
@@ -221,8 +282,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             final post = doc.data() as Map<String, dynamic>;
                             final List<dynamic> curtidas = post['curtidas'] ?? [];
                             final bool euCurti = curtidas.contains(_userId);
-                            
-                            // 🚀 PUXANDO A FOTO DA NUTRI DO FIREBASE
                             final String? fotoAutor = post['foto_autor'];
 
                             return Container(
