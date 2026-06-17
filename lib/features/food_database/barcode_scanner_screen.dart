@@ -18,21 +18,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
   bool _jaEscaneou = false;
   bool _buscandoNaApi = false;
 
-  // 🌐 MOTOR ATUALIZADO: Busca na base mundial com conversores seguros
   Future<Map<String, dynamic>?> _consultarApiMundial(String codigo) async {
-    // Usando o endpoint 'world' para garantir a localização de códigos globais (ex: Coca-Cola)
     final url = Uri.parse('https://world.openfoodfacts.org/api/v2/product/$codigo.json');
-    
     try {
       final resposta = await http.get(url);
       if (resposta.statusCode == 200) {
         final dados = jsonDecode(resposta.body);
-        
         if (dados['status'] == 1 && dados['product'] != null) {
           final p = dados['product'];
           final nutrients = p['nutriments'] ?? {};
 
-          // 🛡️ Extrator Seguro: Evita falhas caso a API envie texto no lugar de número
           double obterValorSeguro(String chave) {
             final valor = nutrients[chave];
             if (valor == null) return 0.0;
@@ -41,24 +36,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
             return 0.0;
           }
 
-          // Pegando os dados padrão da API (Geralmente 100g ou 100ml)
           final double kcal100g = obterValorSeguro('energy-kcal_100g');
-          final double carbos100g = obterValorSeguro('carbohydrates_100g');
-          final double proteinas100g = obterValorSeguro('proteins_100g');
-          final double gorduras100g = obterValorSeguro('fat_100g');
-
-          // Prioriza o nome em Português, se não achar, pega o nome global
           String nomeProduto = p['product_name_pt'] ?? p['product_name'] ?? 'Produto Detectado';
-          String marcaProduto = p['brands']?.split(',').first ?? 'Marca Desconhecida';
+          String marcaProduto = p['brands']?.split(',').first ?? '';
+          
+          String nomeCompleto = marcaProduto.isNotEmpty ? "$nomeProduto ($marcaProduto)" : nomeProduto;
 
           return {
-            'nome': nomeProduto,
-            'marca': marcaProduto,
+            'codigo_barras': codigo,
+            'nome': nomeCompleto,
             'kcal': kcal100g.toInt(),
-            'carbos': carbos100g,
-            'proteinas': proteinas100g,
-            'gorduras': gorduras100g,
-            'porcao': '100g/ml (Base API)'
+            'porcao': '100 g/ml'
           };
         }
       }
@@ -73,10 +61,9 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     
     setState(() {
       _buscandoNaApi = true;
-      _jaEscaneou = true; // Trava o scanner para não ler várias vezes
+      _jaEscaneou = true;
     });
 
-    // Faz a consulta na nuvem
     final produtoDetectado = await _consultarApiMundial(codigo);
 
     setState(() {
@@ -84,19 +71,17 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     });
 
     if (produtoDetectado != null) {
-      // Se achou, abre o painel para o usuário ajustar a quantidade e confirmar
       _mostrarPainelDeConfirmacao(produtoDetectado);
     } else {
-      // Se realmente não existir no banco de dados mundial
       _mostrarPainelDeConfirmacao({
+        'codigo_barras': codigo,
         'nome': 'Item Código $codigo',
-        'marca': 'Não encontrado na base global',
-        'kcal': 0, 'carbos': 0.0, 'proteinas': 0.0, 'gorduras': 0.0, 'porcao': 'Personalizado'
+        'kcal': 0, 
+        'porcao': 'Personalizado'
       });
     }
   }
 
-  // 📝 PAINEL DE EDIÇÃO: Igual ao MyFitnessPal, permite ajustar calorias reais consumidas
   void _mostrarPainelDeConfirmacao(Map<String, dynamic> produto) {
     TextEditingController kcalController = TextEditingController(text: produto['kcal'].toString());
     TextEditingController porcaoController = TextEditingController(text: '1.0');
@@ -122,7 +107,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
           children: [
             const Text('Confirmar Alimento 🔍', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textDark)),
             const SizedBox(height: 8),
-            Text('${produto['nome']} - ${produto['marca']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
+            Text('${produto['nome']}', style: const TextStyle(fontSize: 16, color: AppColors.primarySage, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
             Text('Valores baseados em: ${produto['porcao']}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
             
@@ -163,8 +148,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                 Expanded(
                   child: TextButton(
                     onPressed: () {
-                      Navigator.pop(context); // Fecha o dialog
-                      setState(() => _jaEscaneou = false); // Libera o scanner para tentar de novo
+                      Navigator.pop(context);
+                      setState(() => _jaEscaneou = false);
                     },
                     child: const Text('Cancelar', style: TextStyle(color: Colors.grey)),
                   ),
@@ -176,7 +161,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))
                     ),
-                    onPressed: () => _salvarNoDiario(produto, kcalController.text, porcaoController.text),
+                    onPressed: () => _salvarNoDiarioEComunidade(produto, kcalController.text, porcaoController.text),
                     child: const Text('Salvar Diário', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
@@ -188,8 +173,8 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     );
   }
 
-  // 💾 SALVA NO FIREBASE
-  void _salvarNoDiario(Map<String, dynamic> produtoBase, String kcalDigitada, String multiplicadorDigitado) async {
+  // 🚀 PONTO 3: SALVA NO DIÁRIO E NA COMUNIDADE AO MESMO TEMPO
+  void _salvarNoDiarioEComunidade(Map<String, dynamic> produtoBase, String kcalDigitada, String multiplicadorDigitado) async {
     final String userId = FirebaseAuth.instance.currentUser?.uid ?? 'usuario_teste';
     final agora = DateTime.now();
     final dataHoje = "${agora.year}-${agora.month.toString().padLeft(2, '0')}-${agora.day.toString().padLeft(2, '0')}";
@@ -197,22 +182,16 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     int kcalFinal = int.tryParse(kcalDigitada) ?? produtoBase['kcal'];
     double multiplicador = double.tryParse(multiplicadorDigitado.replaceAll(',', '.')) ?? 1.0;
     
-    // Multiplica os macros pela quantidade que o usuário informou
     int caloriasTotais = (kcalFinal * multiplicador).toInt();
-    double carbosTotais = produtoBase['carbos'] * multiplicador;
-    double proteinasTotais = produtoBase['proteinas'] * multiplicador;
-    double gordurasTotais = produtoBase['gorduras'] * multiplicador;
 
-    final docRef = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataHoje);
+    // 1. Salva no diário do paciente
+    final docRefDiario = FirebaseFirestore.instance.collection('usuarios').doc(userId).collection('diario').doc(dataHoje);
 
-    await docRef.set({
+    await docRefDiario.set({
       'calorias_consumidas': FieldValue.increment(caloriasTotais),
-      'carbos_consumidos': FieldValue.increment(carbosTotais),
-      'proteinas_consumidos': FieldValue.increment(proteinasTotais),
-      'gorduras_consumidos': FieldValue.increment(gordurasTotais),
       'historico_alimentos': FieldValue.arrayUnion([
         {
-          'nome': "📸 ${produtoBase['nome']} (${produtoBase['marca']})",
+          'nome': "📸 ${produtoBase['nome']}",
           'turno': widget.turno,
           'quantidade': multiplicador,
           'medida_escolhida': produtoBase['porcao'],
@@ -222,9 +201,29 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
       ])
     }, SetOptions(merge: true));
 
+    // 2. Salva no banco orgânico da comunidade (usando o código de barras como ID para não duplicar)
+    if (produtoBase['codigo_barras'] != null && produtoBase['nome'] != null && !produtoBase['nome'].toString().startsWith('Item Código')) {
+      final String nomeBuscaLimpo = produtoBase['nome'].toString().toLowerCase()
+          .replaceAll(RegExp(r'[áàâãä]'), 'a')
+          .replaceAll(RegExp(r'[éèêë]'), 'e')
+          .replaceAll(RegExp(r'[íìîï]'), 'i')
+          .replaceAll(RegExp(r'[óòôõö]'), 'o')
+          .replaceAll(RegExp(r'[úùûü]'), 'u')
+          .replaceAll('ç', 'c');
+
+      await FirebaseFirestore.instance.collection('alimentos_comunidade').doc(produtoBase['codigo_barras']).set({
+        'nome': produtoBase['nome'],
+        'nome_busca': nomeBuscaLimpo,
+        'kcal100g': kcalFinal,
+        'medida_base': 'g/ml',
+        'criado_por': 'api_scanner',
+        'timestamp': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+    }
+
     if (mounted) {
-      Navigator.pop(context); // Fecha o bottom sheet
-      Navigator.pop(context); // Fecha o leitor e volta pro diário
+      Navigator.pop(context); 
+      Navigator.pop(context); 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('⚡ ${produtoBase['nome']} salvo com sucesso!'), backgroundColor: AppColors.primarySage),
       );
